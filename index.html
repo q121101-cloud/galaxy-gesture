@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GALAXY GESTURE // Interactive 3D Neural Cosmos</title>
+  <link rel="stylesheet" href="./styles.css">
+  
+  <!-- MediaPipe Hands Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <!-- 3D WebGL Canvas -->
+  <canvas id="webgl-canvas"></canvas>
+
+  <!-- 9:16 Vertical TikTok Guide (Optional Overlay) -->
+  <div class="tiktok-frame-guide" id="tiktok-frame-guide">
+    <div class="tiktok-guide-box">
+      <div class="guide-tag">9:16 TIKTOK FRAME</div>
+    </div>
+  </div>
+
+  <!-- Ambient Cyber Scanline Overlay -->
+  <div class="cyber-scanlines"></div>
+
+  <!-- HUD Interface Layer -->
+  <div class="hud-layer">
+    <!-- TOP-LEFT PANEL -->
+    <header class="top-bar">
+      <div class="brand-card interactive">
+        <div class="brand-header-row">
+          <div class="brand-badge-pulse"></div>
+          <div class="brand-title">
+            <span class="brand-square">■</span> GALAXY GESTURE
+          </div>
+        </div>
+        <div class="brand-subtitle">INTERACTIVE 3D NEURAL COSMOS</div>
+        <div class="stats-group">
+          <div class="stat-item"><span class="stat-lbl">PARTICLES</span><span class="stat-val highlight-glow">100,000</span></div>
+          <div class="stat-divider">/</div>
+          <div class="stat-item"><span class="stat-lbl">RATE</span><span class="stat-val" id="val-fps">120 FPS</span></div>
+          <div class="stat-divider">/</div>
+          <div class="stat-item"><span class="stat-lbl">LATENCY</span><span class="stat-val" id="val-latency">-- ms</span></div>
+        </div>
+      </div>
+
+      <!-- TOP-RIGHT MINI-CAM: NEURAL TRACKER -->
+      <div class="webcam-container interactive" id="webcam-container">
+        <div class="hud-corner top-l"></div>
+        <div class="hud-corner top-r"></div>
+        <div class="hud-corner bot-l"></div>
+        <div class="hud-corner bot-r"></div>
+        <div class="cam-state-badge"></div>
+        <div class="webcam-controls">
+          <button class="icon-btn" id="btn-toggle-pip" title="Toggle Mini-Cam Size">⤢</button>
+        </div>
+        <video class="webcam-video" id="webcam-video" playsinline muted autoplay></video>
+        <canvas class="landmark-canvas" id="landmark-canvas"></canvas>
+        <div class="webcam-label">
+          <span class="pulse-dot"></span> NEURAL TRACKER
+        </div>
+      </div>
+    </header>
+
+    <!-- BOTTOM HUD CONTROLLER -->
+    <footer class="bottom-bar">
+      <div class="hud-panel interactive">
+        <!-- Status Pill & Telemetry Hub -->
+        <div class="status-row">
+          <div class="status-pill-group">
+            <div class="status-badge">
+              <span class="status-dot" id="status-dot"></span>
+              <span class="status-text" id="status-text">Camera Ready: Awaiting Start</span>
+            </div>
+
+            <!-- Finger Extension Matrix [T] [I] [M] [R] [P] -->
+            <div class="finger-status-container" title="Finger Extension Status (Thumb, Index, Middle, Ring, Pinky)">
+              <span class="finger-dot" data-finger="T">T</span>
+              <span class="finger-dot" data-finger="I">I</span>
+              <span class="finger-dot" data-finger="M">M</span>
+              <span class="finger-dot" data-finger="R">R</span>
+              <span class="finger-dot" data-finger="P">P</span>
+            </div>
+          </div>
+
+          <!-- Multi-Axis Telemetry Hub -->
+          <div class="telemetry-readout">
+            <div class="telemetry-chip">EXP <span class="telemetry-val" id="val-openness">0%</span></div>
+            <div class="telemetry-chip">PITCH <span class="telemetry-val" id="val-hand-pitch">+0°</span></div>
+            <div class="telemetry-chip">ROLL <span class="telemetry-val" id="val-hand-rot">+0°</span></div>
+            <div class="telemetry-chip">ZOOM <span class="telemetry-val" id="val-zoom">1.00x</span></div>
+          </div>
+        </div>
+
+        <!-- Dual-State Progress Bar -->
+        <div class="progress-section">
+          <div class="progress-labels">
+            <span class="label-fist">✊ SINGULARITY CORE (FIST)</span>
+            <span class="label-warp">🖐️ SUPERNOVA WARP (OPEN)</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="progress-fill"></div>
+            <div class="progress-marker" id="progress-marker"></div>
+          </div>
+        </div>
+
+        <!-- Theme Selector & Video Capture Controls Row -->
+        <div class="action-row">
+          <div class="btn-group">
+            <button class="hud-btn theme-btn" data-theme="nebula">● Nebula</button>
+            <button class="hud-btn theme-btn" data-theme="supernova">🔥 Supernova</button>
+            <button class="hud-btn theme-btn" data-theme="cyber">⚡ Cyber</button>
+            <button class="hud-btn active theme-btn" data-theme="emerald">🟢 Emerald</button>
+          </div>
+
+          <div class="btn-group">
+            <button class="hud-btn active" id="btn-toggle-bloom">⚡ Bloom: ON</button>
+            <button class="hud-btn" id="btn-toggle-hud" title="Hide HUD for clean TikTok video recording (Press 'H')">🎬 Clean View [H]</button>
+            <button class="hud-btn" id="btn-toggle-tiktok" title="Toggle 9:16 Vertical Framing Guide for TikTok">📱 9:16 Guide</button>
+          </div>
+
+          <div class="shortcut-hints">
+            <span class="key-badge">SPACE</span> Morph &nbsp;|&nbsp;
+            <span class="key-badge">H</span> Clean Video &nbsp;|&nbsp;
+            <span class="key-badge">DRAG</span> Orbit
+          </div>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Welcome / Permission Modal -->
+  <div class="prompt-overlay" id="prompt-overlay">
+    <div class="prompt-modal">
+      <div class="prompt-glow-ring"></div>
+      <div class="prompt-icon">🌌</div>
+      <h2 class="prompt-title">GALAXY GESTURE</h2>
+      <p class="prompt-subtitle">Interactive 3D Neural Cosmos</p>
+      <div class="prompt-instruction-list">
+        <div class="instruction-card">
+          <span class="inst-icon">✊ / 🖐️</span>
+          <div class="inst-text">
+            <b>Clench / Open Palm:</b> Smoothly morph between Singularity Core & Supernova Expansion.
+          </div>
+        </div>
+        <div class="instruction-card">
+          <span class="inst-icon">↺ / ↻</span>
+          <div class="inst-text">
+            <b>Roll Hand Left / Right:</b> Steer and rotate the cosmic disk peacefully in that direction.
+          </div>
+        </div>
+        <div class="instruction-card">
+          <span class="inst-icon">↕️ / 🎬</span>
+          <div class="inst-text">
+            <b>Pitch Tilt & TikTok Mode:</b> Tilt up/down & press <b>[H]</b> for clean video recording.
+          </div>
+        </div>
+      </div>
+      <div class="prompt-actions">
+        <button class="btn-primary" id="btn-start-camera">📸 Enable Webcam Tracking</button>
+        <button class="btn-secondary" id="btn-start-keyboard">⌨️ Keyboard / Mouse Mode</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "galaxy-gesture",
+  "version": "1.0.0",
+  "description": "Interactive 3D WebGL cosmic particle simulation controlled via Webcam hand gestures",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host --port 3000",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
