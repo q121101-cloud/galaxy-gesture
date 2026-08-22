@@ -71,10 +71,13 @@ export class NeuralTracker {
     this.ctx = canvasElement ? canvasElement.getContext('2d', { alpha: true }) : null;
     this.onStateChange = onStateChange || (() => {});
 
-    // Offscreen Canvas for high-speed inference
+    this.isMobile = /iPhone|iPad|iPod|Android|Mobile|Tablet/i.test(navigator.userAgent || '');
+    this.currentFacingMode = 'user'; // 'user' (front) or 'environment' (back)
+
+    // Offscreen Canvas for high-speed neural inference
     this.procCanvas = document.createElement('canvas');
-    this.procCanvas.width = 640;
-    this.procCanvas.height = 480;
+    this.procCanvas.width = this.isMobile ? 360 : 480;
+    this.procCanvas.height = this.isMobile ? 480 : 360;
     this.procCtx = this.procCanvas.getContext('2d', { willReadFrequently: false });
 
     // Output tracking parameters
@@ -90,7 +93,7 @@ export class NeuralTracker {
     this.rawHandScale = 1.0;
     this.fingerStates = [0, 0, 0, 0, 0]; // [T, I, M, R, P]
 
-    // Ultra-smooth 1€ Filters (tuned for linear 1:1 feel)
+    // Ultra-smooth 1€ Filters (tuned for zero latency)
     this.opennessFilter = new OneEuroFilter({ minCutoff: 0.6, beta: 0.04, dCutoff: 1.0 });
     this.posXFilter = new OneEuroFilter({ minCutoff: 0.4, beta: 0.035, dCutoff: 1.0 });
     this.posYFilter = new OneEuroFilter({ minCutoff: 0.4, beta: 0.035, dCutoff: 1.0 });
@@ -104,20 +107,29 @@ export class NeuralTracker {
     this.latencyMs = 0;
     this.consecutiveMissingFrames = 0;
 
-    // Fallback Keyboard Controls
+    // Fallback Touch & Keyboard Controls
     this.isFallbackActive = false;
-    this.keyboardTargetOpenness = 0.0;
-    this.keyboardTargetX = 0.0;
-    this.keyboardTargetY = 0.0;
-    this.keyboardTargetAngle = 0.0;
-    this.keyboardTargetPitch = 0.0;
-    this.keyboardTargetScale = 1.0;
+    this.touchTargetOpenness = 0.0;
+    this.touchTargetX = 0.0;
+    this.touchTargetY = 0.0;
+    this.touchTargetAngle = 0.0;
+    this.touchTargetPitch = 0.0;
+    this.touchTargetScale = 1.0;
 
-    this.setupKeyboardFallback();
+    this.setupTouchAndKeyboardFallback();
   }
 
   async init() {
-    this.onStateChange({ status: 'INITIALIZING', message: 'Initializing Neural Hand Tracker...' });
+    this.onStateChange({ status: 'INITIALIZING', message: 'Initializing Neural Tracker...' });
+
+    // Check secure context for mobile
+    const isSecure = window.isSecureContext || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    if (!isSecure && this.isMobile) {
+      this.onStateChange({
+        status: 'FALLBACK',
+        message: '⚠️ Hãy mở bằng link HTTPS để cấp quyền Camera trên điện thoại'
+      });
+    }
 
     try {
       if (typeof window.Hands === 'undefined') {
@@ -128,11 +140,12 @@ export class NeuralTracker {
         locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
       });
 
+      // Mobile devices use modelComplexity: 0 for lightning-fast 60+ FPS inference & zero throttling
       this.hands.setOptions({
         maxNumHands: 1,
-        modelComplexity: 1,
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5
+        modelComplexity: this.isMobile ? 0 : 1,
+        minDetectionConfidence: 0.45,
+        minTrackingConfidence: 0.45
       });
 
       this.hands.onResults((results) => this.handleResults(results));
@@ -144,7 +157,9 @@ export class NeuralTracker {
       this.isFallbackActive = true;
       this.onStateChange({
         status: 'FALLBACK',
-        message: 'Keyboard Mode: [SPACE] Morph | [↑ / ↓] Pitch & Zoom | [← / →] Roll'
+        message: this.isMobile
+          ? 'Touch Mode: Chạm / Kéo / Dùng 2 ngón tay thu phóng'
+          : 'Keyboard Mode: [SPACE] Morph | [↑ / ↓] Pitch & Zoom | [← / →] Roll'
       });
     }
   }
@@ -161,33 +176,89 @@ export class NeuralTracker {
   }
 
   async startCamera() {
-    const constraints = {
-      video: {
-        width: { ideal: 640, min: 480 },
-        height: { ideal: 480, min: 360 },
-        frameRate: { ideal: 60, min: 30 },
-        facingMode: 'user'
-      },
-      audio: false
-    };
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error('navigator.mediaDevices.getUserMedia is not supported or requires HTTPS');
+    }
 
-    this.stream = await navigator.mediaDevices.getUserMedia(constraints);
-    this.video.srcObject = this.stream;
+    // Stop existing stream if any
+    if (this.stream) {
+      this.stream.getTracks().forEach((t) => t.stop());
+    }
+
+    const constraintList = [
+      // 1. Mobile optimized constraint
+      {
+        video: {
+          facingMode: this.currentFacingMode,
+          width: { ideal: this.isMobile ? 480 : 640 },
+          height: { ideal: this.isMobile ? 640 : 480 },
+          frameRate: { ideal: 30, max: 60 }
+        },
+        audio: false
+      },
+      // 2. Generic facingMode
+      {
+        video: { facingMode: this.currentFacingMode },
+        audio: false
+      },
+      // 3. Fallback any camera
+      {
+        video: true,
+        audio: false
+      }
+    ];
+
+    let stream = null;
+    let lastError = null;
+
+    for (const c of constraintList) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(c);
+        if (stream) break;
+      } catch (err) {
+        lastError = err;
+      }
+    }
+
+    if (!stream) {
+      throw lastError || new Error('Unable to access camera on this device');
+    }
+
+    this.stream = stream;
+    this.video.srcObject = stream;
+    this.video.setAttribute('playsinline', 'true');
+    this.video.setAttribute('webkit-playsinline', 'true');
+    this.video.muted = true;
 
     await new Promise((resolve) => {
       this.video.onloadedmetadata = () => {
-        this.video.play();
-        resolve();
+        this.video.play().then(resolve).catch(resolve);
       };
     });
 
+    const vw = this.video.videoWidth || (this.isMobile ? 480 : 640);
+    const vh = this.video.videoHeight || (this.isMobile ? 640 : 480);
+
     if (this.canvas) {
-      this.canvas.width = this.video.videoWidth || 640;
-      this.canvas.height = this.video.videoHeight || 480;
+      this.canvas.width = vw;
+      this.canvas.height = vh;
     }
+    this.procCanvas.width = Math.min(vw, 480);
+    this.procCanvas.height = Math.min(vh, 480);
 
     this.isCameraRunning = true;
     this.startLoop();
+  }
+
+  async switchCamera() {
+    this.currentFacingMode = this.currentFacingMode === 'user' ? 'environment' : 'user';
+    try {
+      await this.startCamera();
+      return true;
+    } catch (e) {
+      console.warn('Switch camera error:', e);
+      return false;
+    }
   }
 
   startLoop() {
@@ -252,8 +323,9 @@ export class NeuralTracker {
       const palmScale = Math.max((palmWidth * 1.2 + palmHeight * 1.0) / 2.2, 0.035);
 
       // 2. Hand Roll Rotation Angle (Left < 0, Right > 0)
-      const dirX = -(middleMcp.x - wrist.x); // Mirrored webcam
-      const dirY = -(middleMcp.y - wrist.y); // Negative is upward
+      const isFrontCam = this.currentFacingMode === 'user';
+      const dirX = (isFrontCam ? -1 : 1) * (middleMcp.x - wrist.x);
+      const dirY = -(middleMcp.y - wrist.y);
       this.rawHandAngle = Math.atan2(dirX, -dirY);
 
       // 3. Hand Pitch Tilt Angle (Pitch Down < 0, Pitch Up/Back > 0)
@@ -399,46 +471,70 @@ export class NeuralTracker {
     ctx.shadowBlur = 0;
   }
 
-  setupKeyboardFallback() {
+  setupTouchAndKeyboardFallback() {
+    // Keyboard Controls
     window.addEventListener('keydown', (e) => {
       if (e.code === 'Space') {
         e.preventDefault();
-        this.keyboardTargetOpenness = this.keyboardTargetOpenness > 0.5 ? 0.0 : 1.0;
+        this.touchTargetOpenness = this.touchTargetOpenness > 0.5 ? 0.0 : 1.0;
         this.isFallbackActive = true;
       } else if (e.code === 'ArrowUp' || e.code === 'KeyW') {
         e.preventDefault();
-        this.keyboardTargetPitch = Math.min(1.0, this.keyboardTargetPitch + 0.15);
-        this.keyboardTargetScale = Math.min(1.35, this.keyboardTargetScale + 0.05);
+        this.touchTargetPitch = Math.min(1.0, this.touchTargetPitch + 0.15);
+        this.touchTargetScale = Math.min(1.35, this.touchTargetScale + 0.05);
         this.isFallbackActive = true;
       } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
         e.preventDefault();
-        this.keyboardTargetPitch = Math.max(-1.0, this.keyboardTargetPitch - 0.15);
-        this.keyboardTargetScale = Math.max(0.7, this.keyboardTargetScale - 0.05);
+        this.touchTargetPitch = Math.max(-1.0, this.touchTargetPitch - 0.15);
+        this.touchTargetScale = Math.max(0.7, this.touchTargetScale - 0.05);
         this.isFallbackActive = true;
       } else if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
         e.preventDefault();
-        this.keyboardTargetAngle -= 0.15;
-        this.keyboardTargetX = Math.max(-1.0, this.keyboardTargetX - 0.1);
+        this.touchTargetAngle -= 0.15;
+        this.touchTargetX = Math.max(-1.0, this.touchTargetX - 0.1);
         this.isFallbackActive = true;
       } else if (e.code === 'ArrowRight' || e.code === 'KeyD') {
         e.preventDefault();
-        this.keyboardTargetAngle += 0.15;
-        this.keyboardTargetX = Math.min(1.0, this.keyboardTargetX + 0.1);
+        this.touchTargetAngle += 0.15;
+        this.touchTargetX = Math.min(1.0, this.touchTargetX + 0.1);
         this.isFallbackActive = true;
       }
     });
+
+    // Touch Controls: Pinch to Zoom & Morph on mobile touch
+    let initialTouchDist = 0;
+    window.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2) {
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        initialTouchDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+        this.isFallbackActive = true;
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 2 && initialTouchDist > 0) {
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+        const ratio = currentDist / initialTouchDist;
+        this.touchTargetOpenness = Math.max(0.0, Math.min(1.0, (ratio - 0.7) / 0.9));
+        this.touchTargetScale = Math.max(0.7, Math.min(1.35, ratio));
+        this.isFallbackActive = true;
+      }
+    }, { passive: true });
   }
 
   update() {
     const now = performance.now();
 
     if (this.isFallbackActive || !this.isHandDetected) {
-      this.openness = this.opennessFilter.filter(this.keyboardTargetOpenness, now);
-      this.handPosition.x = this.posXFilter.filter(this.keyboardTargetX, now);
-      this.handPosition.y = this.posYFilter.filter(this.keyboardTargetY, now);
-      this.handAngle = this.angleFilter.filter(this.keyboardTargetAngle, now);
-      this.handPitch = this.pitchFilter.filter(this.keyboardTargetPitch, now);
-      this.handScale = this.scaleFilter.filter(this.keyboardTargetScale, now);
+      this.openness = this.opennessFilter.filter(this.touchTargetOpenness, now);
+      this.handPosition.x = this.posXFilter.filter(this.touchTargetX, now);
+      this.handPosition.y = this.posYFilter.filter(this.touchTargetY, now);
+      this.handAngle = this.angleFilter.filter(this.touchTargetAngle, now);
+      this.handPitch = this.pitchFilter.filter(this.touchTargetPitch, now);
+      this.handScale = this.scaleFilter.filter(this.touchTargetScale, now);
     }
 
     return {

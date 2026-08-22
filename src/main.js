@@ -70,8 +70,11 @@ class GalaxyGestureApp {
         this.tracker.isFallbackActive = true;
         this.ui.updateTrackerState({
           status: 'FALLBACK',
-          message: 'Keyboard Mode: [SPACE] Morph | [↑ / ↓] Pitch & Zoom | [← / →] Roll'
+          message: 'Keyboard / Touch Mode: Chạm hoặc dùng phím điều khiển'
         });
+      },
+      onSwitchCamera: async () => {
+        await this.tracker.switchCamera();
       },
       onThemeChange: (theme) => {
         this.particles.setTheme(theme);

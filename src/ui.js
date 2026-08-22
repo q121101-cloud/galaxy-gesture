@@ -1,7 +1,8 @@
 export class UIManager {
-  constructor({ onStartCamera, onStartKeyboard, onThemeChange, onToggleBloom }) {
+  constructor({ onStartCamera, onStartKeyboard, onSwitchCamera, onThemeChange, onToggleBloom }) {
     this.onStartCamera = onStartCamera;
     this.onStartKeyboard = onStartKeyboard;
+    this.onSwitchCamera = onSwitchCamera;
     this.onThemeChange = onThemeChange;
     this.onToggleBloom = onToggleBloom;
     this.hudVisible = true;
@@ -28,6 +29,7 @@ export class UIManager {
       fingerDots: document.querySelectorAll('.finger-dot'),
       webcamContainer: document.getElementById('webcam-container'),
       btnTogglePip: document.getElementById('btn-toggle-pip'),
+      btnSwitchCam: document.getElementById('btn-switch-cam'),
       btnToggleBloom: document.getElementById('btn-toggle-bloom'),
       btnToggleHud: document.getElementById('btn-toggle-hud'),
       btnToggleTiktok: document.getElementById('btn-toggle-tiktok'),
@@ -51,6 +53,12 @@ export class UIManager {
 
     this.elements.btnTogglePip?.addEventListener('click', () => {
       this.elements.webcamContainer?.classList.toggle('minimized');
+    });
+
+    this.elements.btnSwitchCam?.addEventListener('click', async () => {
+      if (this.onSwitchCamera) {
+        await this.onSwitchCamera();
+      }
     });
 
     this.elements.btnToggleBloom?.addEventListener('click', () => {

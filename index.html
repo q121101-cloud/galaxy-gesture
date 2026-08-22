@@ -53,9 +53,10 @@
         <div class="hud-corner bot-r"></div>
         <div class="cam-state-badge"></div>
         <div class="webcam-controls">
+          <button class="icon-btn" id="btn-switch-cam" title="Switch Front/Back Camera">🔄</button>
           <button class="icon-btn" id="btn-toggle-pip" title="Toggle Mini-Cam Size">⤢</button>
         </div>
-        <video class="webcam-video" id="webcam-video" playsinline muted autoplay></video>
+        <video class="webcam-video" id="webcam-video" playsinline webkit-playsinline="true" muted autoplay></video>
         <canvas class="landmark-canvas" id="landmark-canvas"></canvas>
         <div class="webcam-label">
           <span class="pulse-dot"></span> NEURAL TRACKER
