@@ -4,6 +4,7 @@ import { PostProcessingPipeline } from './postprocessing.js';
 import { ParticleSystem } from './particles.js';
 import { NeuralTracker } from './tracker.js';
 import { UIManager } from './ui.js';
+import { inject } from '@vercel/analytics';
 
 class GalaxyGestureApp {
   constructor() {
@@ -157,3 +158,6 @@ class GalaxyGestureApp {
 window.addEventListener('DOMContentLoaded', () => {
   new GalaxyGestureApp();
 });
+
+// Initialize Vercel Web Analytics
+inject();
