@@ -41,7 +41,7 @@ attribute vec3 aTargetFist;
 attribute vec3 aTargetOpen;
 attribute vec3 aColor;
 attribute float aSize;
-attribute float aType; // 0: Core (30%), 1: Accretion Ring (70%)
+attribute float aType; // 0: Core, 1: Disc/Arms, 2: Halo/Field
 attribute float aOrbitSpeed;
 attribute float aOrbitRadius;
 attribute float aOrbitAngle;
@@ -64,48 +64,43 @@ vec3 hsv2rgb(vec3 c) {
 
 void main() {
   if (uIsRainbow > 0.5) {
-    if (aType < 0.5) {
-      // 30% Core: Radiant pulsating rainbow singularity with white hot core
-      float hueCore = fract(uTime * 0.16 + length(aTargetFist) * 0.03 + aPhase * 0.08);
-      vec3 colCore = hsv2rgb(vec3(hueCore, 0.88, 1.0));
-      vColor = mix(vec3(1.0, 1.0, 1.0), colCore, clamp(length(aTargetFist) / 22.0, 0.0, 0.85));
-    } else {
-      // 70% Accretion Disc: Flowing 7-color rainbow waves rippling through space
-      float hueDisc = fract(uTime * 0.12 - (aOrbitRadius - 50.0) * 0.0035 + aOrbitAngle * 0.22 + aPhase * 0.06);
-      vColor = hsv2rgb(vec3(hueDisc, 0.95, 1.0));
-    }
+    // Dynamic 7-color RGB rainbow spectrum flowing organically across space & time
+    float hue = fract(uTime * 0.08 - aOrbitRadius * 0.0028 + aOrbitAngle * 0.20 + aPhase * 0.05);
+    vec3 rainbowCol = hsv2rgb(vec3(hue, 0.90, 1.0));
+    float coreBlend = clamp(1.0 - aOrbitRadius / 35.0, 0.0, 0.7);
+    vColor = mix(rainbowCol, vec3(1.0), coreBlend);
   } else {
     vColor = aColor;
   }
 
-  // 1. Target Geometry A: Fist (Singularity Core + Accretion Disc)
+  // 1. Target Geometry A: Fist (Evenly Distributed Spiral Galaxy with Accretion Flow)
   vec3 fistPos = aTargetFist;
+  vec3 discNormal = normalize(vec3(0.0, 0.848, 0.530));
   
   if (aType > 0.5) {
-    // 70% Accretion Disc: Ultra-slow, serene, meditative orbital flow
-    vec3 discNormal = normalize(vec3(0.0, 0.848, 0.530));
+    // Disc & Halo: Ultra-slow, serene, meditative orbital flow
     float orbitAngle = uTime * aOrbitSpeed * (1.0 - uOpenness * 0.35);
     fistPos = rotateAxis(aTargetFist, discNormal, orbitAngle);
     
-    // Very soft ripples
-    float ripple = sin(aOrbitRadius * 0.08 - uTime * 0.2) * 0.5;
+    // Very soft cosmic breathing waves
+    float ripple = sin(aOrbitRadius * 0.06 - uTime * 0.2 + aPhase) * 0.6;
     fistPos += discNormal * ripple;
   } else {
-    // 30% Singularity Core: Ultra-gentle breathing
-    float pulse = sin(uTime * 0.65 + aPhase) * 0.6;
+    // Core: Soft radiant pulsating breathing
+    float pulse = sin(uTime * 0.65 + aPhase) * 0.7;
     vec3 radialDir = normalize(aTargetFist + vec3(0.0001));
-    vec3 coreTurb = getCosmicTurbulence(aTargetFist * 1.0, uTime * 0.1) * 0.8;
+    vec3 coreTurb = getCosmicTurbulence(aTargetFist * 0.8, uTime * 0.1) * 0.9;
     fistPos += radialDir * pulse + coreTurb;
   }
 
   // 2. Target Geometry B: Open Hand (Peaceful, Radiant Supernova Disc Expansion)
   vec3 openPos = aTargetOpen;
   
-  float warpTravel = mod(uTime * 20.0 * (1.0 + length(aWarpVelocity) * 0.15), 350.0) - 120.0;
+  float warpTravel = mod(uTime * 20.0 * (1.0 + length(aWarpVelocity) * 0.15), 380.0) - 130.0;
   openPos.z += warpTravel * 0.08;
   
   vec3 warpBurstDir = normalize(openPos);
-  vec3 warpTurb = getCosmicTurbulence(openPos * 0.2, uTime * 0.15) * 3.5;
+  vec3 warpTurb = getCosmicTurbulence(openPos * 0.18, uTime * 0.15) * 3.5;
   openPos += warpBurstDir * warpTurb.x + warpTurb * 0.25;
 
   // 3. Quintic Ultra-Smooth Morphing (Zero jerk, analog linear feel)
@@ -113,8 +108,8 @@ void main() {
   vec3 currentPos = mix(fistPos, openPos, morphFactor);
 
   // 4. Soft Ambient Cosmic Waves
-  vec3 waveTurb = getCosmicTurbulence(currentPos * 0.18, uTime * 0.1);
-  float turbAmp = mix(1.0, 3.5, morphFactor);
+  vec3 waveTurb = getCosmicTurbulence(currentPos * 0.15, uTime * 0.1);
+  float turbAmp = mix(0.8, 3.2, morphFactor);
   currentPos += waveTurb * turbAmp;
 
   // Subtle Hand Position Tilt Influence
@@ -127,16 +122,16 @@ void main() {
 
   // 6. Point Size Attenuation & Crisp HD Shimmer
   float depth = -mvPosition.z;
-  float sizeBoost = mix(1.0, 1.22, morphFactor);
+  float sizeBoost = mix(1.0, 1.25, morphFactor);
   if (aType < 0.5) {
-    sizeBoost *= (1.0 + 0.1 * sin(uTime * 1.2 + aPhase));
+    sizeBoost *= (1.0 + 0.08 * sin(uTime * 1.2 + aPhase));
   }
   
   gl_PointSize = aSize * sizeBoost * (360.0 / max(depth, 1.0)) * uPixelRatio;
-  gl_PointSize = clamp(gl_PointSize, 1.0, 36.0);
+  gl_PointSize = clamp(gl_PointSize, 0.8, 28.0);
 
   // Depth Fade
-  vAlpha = clamp(1.0 - (depth - 140.0) / 900.0, 0.40, 1.0);
+  vAlpha = clamp(1.0 - (depth - 140.0) / 950.0, 0.35, 1.0);
 }
 `;
 
@@ -154,12 +149,12 @@ void main() {
   }
   
   float dist = sqrt(distSq);
-  // Crisp neon core with clean gaussian glow (HD video recording)
-  float innerGlow = exp(-dist * 13.5) * 1.6;
-  float outerGlow = smoothstep(0.5, 0.05, dist);
+  // Crisp neon core with soft gaussian stardust glow
+  float innerGlow = exp(-dist * 12.0) * 1.2;
+  float outerGlow = smoothstep(0.5, 0.02, dist);
   
-  vec3 finalColor = vColor * outerGlow + vec3(innerGlow);
-  float finalAlpha = outerGlow * vAlpha * 0.95;
+  vec3 finalColor = vColor * outerGlow + vec3(innerGlow * 0.5);
+  float finalAlpha = outerGlow * vAlpha * 0.78;
   
   gl_FragColor = vec4(finalColor, finalAlpha);
 }
@@ -194,59 +189,70 @@ export class ParticleSystem {
     const phases = new Float32Array(count);
     const warpVelocities = new Float32Array(count * 3);
 
-    // 30% Core (150,000), 70% Accretion Disc (350,000)
-    const coreCount = Math.floor(count * 0.30);
+    // Natural Component Distribution:
+    // - Core: 8% (40,000 particles) - soft central stellar bulge
+    // - Spiral Arms: 72% (360,000 particles) - beautifully dispersed multi-arm structure
+    // - Diffuse Halo & Field Stars: 20% (100,000 particles) - filling inter-arm space evenly
+    const coreCount = Math.floor(count * 0.08);
+    const armCount = Math.floor(count * 0.72);
 
     const discEuler = new THREE.Euler(THREE.MathUtils.degToRad(32), 0, THREE.MathUtils.degToRad(15), 'XYZ');
     const discMatrix = new THREE.Matrix4().makeRotationFromEuler(discEuler);
 
     for (let i = 0; i < count; i++) {
       const i3 = i * 3;
-      const isCore = i < coreCount;
-
-      types[i] = isCore ? 0.0 : 1.0;
       phases[i] = Math.random() * Math.PI * 2;
 
-      // ==========================================
-      // TARGET A: FIST (30% CORE R:5-25, 70% ACCRETION DISC R:50-175)
-      // ==========================================
-      if (isCore) {
+      let r, theta, yLocal, pType, speed, pSize;
+
+      if (i < coreCount) {
+        // ==========================================
+        // 1. SOFT CORE BULGE (8%): R: 0 to 42
+        // ==========================================
+        pType = 0.0;
         const u = Math.random();
-        const r = 5.0 + 20.0 * Math.pow(u, 1.8);
-        const theta = Math.random() * Math.PI * 2;
+        r = 42.0 * Math.pow(u, 0.75);
+        theta = Math.random() * Math.PI * 2;
         const phi = Math.acos(2.0 * Math.random() - 1.0);
 
-        const x = r * Math.sin(phi) * Math.cos(theta);
-        const y = r * Math.sin(phi) * Math.sin(theta);
-        const z = r * Math.cos(phi);
+        const xSphere = r * Math.sin(phi) * Math.cos(theta);
+        const ySphere = r * Math.sin(phi) * Math.sin(theta) * 0.65;
+        const zSphere = r * Math.cos(phi);
 
-        targetFist[i3] = x;
-        targetFist[i3 + 1] = y;
-        targetFist[i3 + 2] = z;
+        targetFist[i3] = xSphere;
+        targetFist[i3 + 1] = ySphere;
+        targetFist[i3 + 2] = zSphere;
 
-        orbitRadii[i] = r;
-        orbitSpeeds[i] = 0;
-        sizes[i] = 1.5 + Math.random() * 1.8;
-
-      } else {
-        // 70% Accretion Disc: Ultra-gentle, slow celestial glide
-        const rMin = 50.0;
-        const rMax = 175.0;
-        const u = Math.random();
-        const r = Math.sqrt(rMin * rMin + u * (rMax * rMax - rMin * rMin));
-
-        const armOffset = (i % 2 === 0 ? 0 : Math.PI);
-        const spiralAngle = Math.log(r / rMin) * 2.2 + armOffset + (Math.random() - 0.5) * 0.45;
-        const theta = spiralAngle;
-
-        // Ultra-gentle, peaceful orbital speed (1.1)
-        const speed = (1.1 / Math.sqrt(r)) * (0.9 + Math.random() * 0.2);
-        orbitSpeeds[i] = speed * (Math.random() < 0.05 ? -0.8 : 1.0);
         orbitRadii[i] = r;
         orbitAngles[i] = theta;
+        orbitSpeeds[i] = (1.4 / Math.sqrt(r + 15.0));
+        pSize = 0.9 + Math.random() * 1.3;
 
-        const heightSpread = (1.0 - (r - rMin) / (rMax - rMin) * 0.5) * 3.2;
-        const yLocal = (Math.random() - 0.5 + Math.random() - 0.5) * heightSpread;
+      } else if (i < coreCount + armCount) {
+        // ==========================================
+        // 2. DISPERSED 4-ARM SPIRAL DISC (72%): R: 8 to 220
+        // ==========================================
+        pType = 1.0;
+        const u = Math.random();
+        r = 8.0 + 212.0 * Math.pow(u, 1.35);
+
+        // 4 organic spiral arms (2 major, 2 minor)
+        const numArms = 4;
+        const armIndex = i % numArms;
+        const baseArmAngle = armIndex * (Math.PI * 2 / numArms);
+
+        // Logarithmic spiral pitch
+        const spiralPitch = Math.log(Math.max(r / 7.0, 1.0)) * 2.15 + baseArmAngle;
+
+        // Gaussian-like angular feathering (spreads out naturally towards outer edge)
+        const g1 = Math.random() + Math.random() + Math.random() - 1.5;
+        const armWidth = 0.42 + (r / 220.0) * 0.68;
+        theta = spiralPitch + g1 * armWidth;
+
+        // Flared disc vertical height
+        const heightSpread = 1.6 + (r / 220.0) * 8.5;
+        const g2 = Math.random() + Math.random() + Math.random() - 1.5;
+        yLocal = g2 * heightSpread;
 
         const localPos = new THREE.Vector3(r * Math.cos(theta), yLocal, r * Math.sin(theta));
         localPos.applyMatrix4(discMatrix);
@@ -255,16 +261,49 @@ export class ParticleSystem {
         targetFist[i3 + 1] = localPos.y;
         targetFist[i3 + 2] = localPos.z;
 
-        sizes[i] = 1.1 + Math.random() * 1.5;
+        speed = (1.15 / Math.sqrt(r + 8.0)) * (0.92 + Math.random() * 0.16);
+        orbitSpeeds[i] = speed;
+        orbitRadii[i] = r;
+        orbitAngles[i] = theta;
+        pSize = 0.8 + Math.random() * 1.2;
+
+      } else {
+        // ==========================================
+        // 3. DIFFUSE INTER-ARM STARDUST & HALO (20%): R: 10 to 230
+        // ==========================================
+        pType = 2.0;
+        const u = Math.random();
+        r = 10.0 + 220.0 * Math.sqrt(u);
+        theta = Math.random() * Math.PI * 2;
+
+        const heightSpread = 3.5 + (r / 230.0) * 22.0;
+        const g2 = Math.random() + Math.random() + Math.random() - 1.5;
+        yLocal = g2 * heightSpread;
+
+        const localPos = new THREE.Vector3(r * Math.cos(theta), yLocal, r * Math.sin(theta));
+        localPos.applyMatrix4(discMatrix);
+
+        targetFist[i3] = localPos.x;
+        targetFist[i3 + 1] = localPos.y;
+        targetFist[i3 + 2] = localPos.z;
+
+        speed = (1.1 / Math.sqrt(r + 8.0)) * (0.88 + Math.random() * 0.24);
+        orbitSpeeds[i] = speed;
+        orbitRadii[i] = r;
+        orbitAngles[i] = theta;
+        pSize = 0.7 + Math.random() * 1.0;
       }
 
+      types[i] = pType;
+      sizes[i] = pSize;
+
       // ==========================================
-      // TARGET B: OPEN PALM (BLOOMING GALAXY EXPANSION)
+      // TARGET B: OPEN PALM (EVEN VOLUMETRIC COSMIC EXPANSION)
       // ==========================================
-      const warpRadius = 70.0 + Math.pow(Math.random(), 1.35) * 140.0;
-      const warpAngle = Math.random() * Math.PI * 2;
-      const warpZ = -90.0 + Math.random() * 200.0;
-      const spreadFactor = 1.0 + ((warpZ + 90.0) / 200.0) * 0.35;
+      const warpRadius = 35.0 + Math.pow(Math.random(), 1.15) * 235.0;
+      const warpAngle = theta + (Math.random() - 0.5) * 0.6;
+      const warpZ = -120.0 + Math.random() * 250.0;
+      const spreadFactor = 1.0 + ((warpZ + 120.0) / 250.0) * 0.35;
 
       const openX = warpRadius * Math.cos(warpAngle) * spreadFactor;
       const openY = warpRadius * Math.sin(warpAngle) * spreadFactor;
@@ -274,7 +313,7 @@ export class ParticleSystem {
       targetOpen[i3 + 1] = openY;
       targetOpen[i3 + 2] = openZ;
 
-      const warpDir = new THREE.Vector3(openX, openY, openZ + 80).normalize();
+      const warpDir = new THREE.Vector3(openX, openY, openZ + 70).normalize();
       warpVelocities[i3] = warpDir.x;
       warpVelocities[i3 + 1] = warpDir.y;
       warpVelocities[i3 + 2] = warpDir.z;
@@ -335,7 +374,7 @@ export class ParticleSystem {
     this.material.uniforms.uOpenness.value = openness;
     this.material.uniforms.uHandPos.value.set(handPos.x, handPos.y);
 
-    // 1. Soft Hand Pitch Tilt (Chúi xuống -> chúi xuống, chúi ra sau -> xoay ngửa lên)
+    // 1. Soft Hand Pitch Tilt
     const targetPitchX = handPitch * 0.4;
     this.currentRotationX += (targetPitchX - this.currentRotationX) * Math.min(1.0, 3.5 * delta);
     this.points.rotation.x = this.currentRotationX;
@@ -343,7 +382,7 @@ export class ParticleSystem {
     // 2. Ultra-gentle Hand Roll Rotation Control
     const isSteering = Math.abs(handAngle) > 0.08;
     if (isSteering) {
-      const targetSpinSpeed = handAngle * 0.16; // Ultra-gentle steering speed
+      const targetSpinSpeed = handAngle * 0.16;
       this.spinVelocity += (targetSpinSpeed - this.spinVelocity) * Math.min(1.0, 2.5 * delta);
     } else {
       this.spinVelocity += (0.0 - this.spinVelocity) * Math.min(1.0, 1.8 * delta);
@@ -382,47 +421,46 @@ export class ParticleSystem {
     const count = this.particleCount;
     const colorAttr = this.points.geometry.getAttribute('aColor');
     const colors = colorAttr.array;
-    const types = this.points.geometry.getAttribute('aType').array;
     const radii = this.points.geometry.getAttribute('aOrbitRadius').array;
+    const types = this.points.geometry.getAttribute('aType').array;
 
     let cCore = new THREE.Color('#ffffff');
     let cMid, cEdge;
 
     if (theme === 'nebula') {
       cMid = new THREE.Color('#bd00ff');
-      cEdge = new THREE.Color('#4b0082');
+      cEdge = new THREE.Color('#38006b');
     } else if (theme === 'supernova') {
       cMid = new THREE.Color('#ff8800');
-      cEdge = new THREE.Color('#aa1100');
+      cEdge = new THREE.Color('#880e00');
     } else if (theme === 'cyber') {
       cMid = new THREE.Color('#00f0ff');
-      cEdge = new THREE.Color('#0011ff');
+      cEdge = new THREE.Color('#0011bb');
     } else {
       // Default: Emerald
       cMid = new THREE.Color('#00ffb3');
-      cEdge = new THREE.Color('#006655');
+      cEdge = new THREE.Color('#004d40');
     }
 
     const tempColor = new THREE.Color();
     for (let i = 0; i < count; i++) {
       const i3 = i * 3;
-      const isCore = types[i] < 0.5;
+      const r = radii[i];
+      const normR = Math.max(0.0, Math.min(1.0, r / 220.0));
+      const rand = Math.random();
 
-      if (isCore) {
-        const normR = Math.min(1.0, (radii[i] - 5.0) / 20.0);
-        tempColor.copy(cCore).lerp(cMid, normR * 0.85);
+      if (types[i] < 0.5) {
+        // Core: Soft gradient from pure glowing white to mid color
+        const coreNorm = Math.min(1.0, r / 42.0);
+        tempColor.copy(cCore).lerp(cMid, coreNorm * 0.7);
       } else {
-        const rMin = 50.0;
-        const rMax = 175.0;
-        const normR = Math.max(0.0, Math.min(1.0, (radii[i] - rMin) / (rMax - rMin)));
-        const rand = Math.random();
-
-        if (rand < 0.85) {
-          tempColor.copy(cMid).lerp(cEdge, normR);
-        } else if (rand < 0.96) {
-          tempColor.copy(cMid).lerp(cCore, Math.random() * 0.6);
+        // Disc & Halo: Smooth natural transition with stellar color diversity
+        if (rand < 0.78) {
+          tempColor.copy(cMid).lerp(cEdge, Math.pow(normR, 0.85));
+        } else if (rand < 0.94) {
+          tempColor.copy(cMid).lerp(cCore, Math.random() * 0.45);
         } else {
-          tempColor.copy(cCore);
+          tempColor.copy(cCore).lerp(cMid, 0.3);
         }
       }
 
