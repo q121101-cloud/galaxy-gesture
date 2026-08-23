@@ -85,8 +85,8 @@ void main() {
   // Secondary subtle outer ring
   float outerRing = exp(-abs(dist - bcrit) * 45.0 / uEinsteinRingSize) * 0.8;
 
-  // Quantum boundary Hawking / accretion shimmer
-  float shimmer = sin(uTime * 4.0 * uTimeDilation + atan(delta.y, delta.x) * 8.0) * 0.15 + 0.85;
+  // Quantum boundary Hawking / accretion shimmer (slowed down by 45% for cinematic glow)
+  float shimmer = sin(uTime * 2.2 * uTimeDilation + atan(delta.y, delta.x) * 8.0) * 0.15 + 0.85;
   vec3 totalGlow = uGlowColor * (photonGlow + outerRing) * shimmer;
 
   // 4. Soft inner horizon edge feathering (anti-aliased event horizon)

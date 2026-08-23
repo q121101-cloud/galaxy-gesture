@@ -44,7 +44,7 @@ export class CameraController {
     this.baseDistance = this.initialPosition.length();
     this.currentDistance = this.baseDistance;
 
-    this.dampingFactor = config?.dampingFactor ?? 5.5;
+    this.dampingFactor = config?.dampingFactor ?? 3.2;
     this.minDistance = config?.minDistance ?? 40.0;
     this.maxDistance = config?.maxDistance ?? 700.0;
     this.pitchLimit = config?.pitchLimit ?? (Math.PI / 4.0); // +/- 45 deg
@@ -59,9 +59,9 @@ export class CameraController {
    */
   public update(rawDelta: number, gestureState?: GestureState): void {
     if (gestureState && (gestureState.hasHand || gestureState.intensity > 0)) {
-      // 1. Map gesture orientation
-      this.targetYaw = Math.max(-this.yawLimit, Math.min(this.yawLimit, gestureState.rotation.yaw * 1.2));
-      this.targetPitch = Math.max(-this.pitchLimit, Math.min(this.pitchLimit, gestureState.rotation.pitch * 1.0));
+      // 1. Map gesture orientation (smoothed and slowed down by 40-50% for cinematic celestial feel)
+      this.targetYaw = Math.max(-this.yawLimit, Math.min(this.yawLimit, gestureState.rotation.yaw * 0.7));
+      this.targetPitch = Math.max(-this.pitchLimit, Math.min(this.pitchLimit, gestureState.rotation.pitch * 0.6));
 
       // 2. Map openness & scale to zoom distance
       const zoomOffset = -(gestureState.openness - 0.5) * 70.0 - gestureState.zoomDelta * 90.0;

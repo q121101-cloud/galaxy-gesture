@@ -119,8 +119,8 @@ void main() {
     baseColor = mix(baseColor, vec3(0.6, 0.05, 0.01), redShift);
   }
 
-  // 5. Magneto-Hydrodynamic (MHD) Spiral Plasma Filaments
-  float spiralAngle = atan(vWorldPosition.z, vWorldPosition.x) * 4.0 - (r * 0.45) + uTime * 0.4 * uTimeDilation;
+  // 5. Magneto-Hydrodynamic (MHD) Spiral Plasma Filaments (slowed down by 45% for majestic cinematic flow)
+  float spiralAngle = atan(vWorldPosition.z, vWorldPosition.x) * 4.0 - (r * 0.45) + uTime * 0.22 * uTimeDilation;
   vec2 noiseUv = vec2(r * 0.35, spiralAngle * 0.15);
   float plasmaFbm = fbm(noiseUv * uTurbulenceDensity);
   float plasmaFilaments = smoothstep(0.3, 0.85, plasmaFbm);

@@ -1,46 +1,41 @@
-# Sentinel Handoff Report: Interstellar Gesture Experience
+# Sentinel Handoff Report: Interstellar Gesture Experience (Gargantua Adjustments)
 
 ## Observation
-All requirements for the Interstellar Gesture Experience web application (ORIGINAL_REQUEST.md) have been fully implemented, verified, and audited:
-- **R1: Interstellar Visual Scenes**:
-  - Gargantua scene with >350,000 GPU Keplerian accretion particles, relativistic Doppler shift (blue/red), polar relativistic jets, and gravitational lensing raymarcher.
-  - Wormhole scene with traversable Ellis spherical portal, dual starfield skyboxes, and warp flight effects.
-  - Tesseract 5D scene with infinite bookshelf lattice, neon timeline filaments, and quantum motes.
-  - Cinematic smootherstep cross-fade transitions between scenes.
-- **R2: MediaPipe Hand Gestures**:
-  - Scale-invariant 21-landmark tracking with 1-Euro noise filtering and 2nd-order critically damped harmonic spring physics.
-  - Open hand / fist zoom expand & collapse.
-  - Hand tilt left/right yaw and pitch up/down rotation.
-  - Two-finger pinch relativistic time dilation effect.
-  - Multi-frame swipe gesture for scene switching.
-- **R3: Procedural Web Audio**:
-  - 100% synthesized in Web Audio API without external audio files.
-  - Hans Zimmer-style additive pipe organ drone, ethereal wormhole pad, and Tesseract clockwork ticking synthesizer.
-  - Gesture-intensity dynamic audio coupling and equal-power crossfading.
-- **R4: Cinematic Glassmorphic HUD & Video Recorder**:
-  - Monospaced telemetry, live rolling 60 FPS counter, particle counter (>300k), 3D roll/pitch gauges.
-  - Webcam inset PIP with 21-joint neon cyber landmark skeleton overlay.
-  - Contextual gesture hint cards.
-  - `[H]` key clean view toggle and 60 FPS Canvas + Web Audio media recorder.
-- **R5: Vercel Deployment Ready**:
-  - Zero-error TypeScript compilation and Vite production build (`dist/` generated in 612ms).
-  - Configured `vercel.json` with SPA routing and security/camera permissions policy.
+All requirements for the targeted Gargantua black hole scene adjustments (ORIGINAL_REQUEST.md follow-up) have been implemented, verified, and audited:
+- **R1: Particle Count Reduction**:
+  - Gargantua scene particle system configured to exactly 200,000 particles across all 9 GPU attribute buffers (`position`, `aVelocity`, `aColor`, `aSize`, `aOrbitRadius`, `aOrbitSpeed`, `aOrbitAngle`, `aType`, `aPhase`).
+  - Wormhole and Tesseract scenes remain untouched at 300,000 particles.
+  - HUD particle counter display synchronized.
+- **R2: Speed Reduction (40–50%)**:
+  - Accretion disk Keplerian orbital angular velocity reduced by 45.0% (1.8 → 0.99).
+  - Accretion disk vertical flare turbulence reduced by 45.0% (0.50 → 0.275).
+  - MHD spiral angle precession reduced by 45.0% (0.40 → 0.22).
+  - Inner ISCO particle orbital speed reduced by 45.0% (2.4 → 1.32).
+  - Accretion spiral particle speed reduced by 45.0% (1.8 → 0.99).
+  - Polar relativistic jet velocities and helical angle reduced by 45.0% (speed: 15.4+5.5, vy: 13.75+8.25, helix: 2.2).
+  - Halo stardust orbital speed reduced by 45.0% (0.6 → 0.33).
+  - Photon ring auto-rotation rate reduced by 45.0% (0.12 → 0.066 rad/s).
+  - Quantum boundary shimmer rate reduced by 45.0% (4.0 → 2.2).
+  - Camera gesture yaw sensitivity reduced by 41.7% (1.2 → 0.7) and pitch sensitivity reduced by 40.0% (1.0 → 0.6) with increased damping weight (5.5 → 3.2) for smooth, heavy responsiveness.
 
 ## Logic Chain
-1. Project Sentinel recorded original request to `ORIGINAL_REQUEST.md`.
-2. Routed to `teamwork_preview_orchestrator` via General SWE path.
-3. Orchestrator deployed exploration, test infrastructure, core shader pipeline, 3D scenes, gesture physics, audio engines, HUD, and adversarial hardening.
-4. Independent `teamwork_preview_victory_auditor` verified timeline, code integrity, 100% automated test execution (356/356 tests passed across 68 suites), and clean production build.
-5. Verdict: VICTORY CONFIRMED.
+1. Project Sentinel recorded the follow-up request in `ORIGINAL_REQUEST.md`.
+2. Evaluated routing: routed to SWE Light path (`teamwork_preview_swe`) as a single self-contained focused change.
+3. SWE Light orchestrator dispatched implementer and executed 3 adversarial review rounds.
+4. Independent Sentinel Victory Auditor (`teamwork_preview_victory_auditor`) verified forensic timeline, zero-bypass code integrity, and independent test execution.
+5. All 69 test suites (363/363 tests), 39/39 adversarial stress tests, 32/32 challenger tests passed 100%, and `npm run build` exited cleanly with code 0.
+6. Verdict: VICTORY CONFIRMED.
 
 ## Caveats
-- Webcam gesture tracking requires camera permissions in browser.
-- Audio autoplay requires user interaction (click/tap) per modern browser autoplay policies.
+- Real-time webcam tracking requires browser camera permission.
+- Audio synthesis requires initial user interaction per browser autoplay policies.
 
 ## Conclusion
-The Interstellar Gesture Experience web application is 100% complete, fully verified, and ready for deployment to Vercel.
+The Gargantua black hole scene has been configured for exactly 200,000 particles and the animation/motion pacing has been reduced by 40–50%, delivering a majestic, cinematic gravitational feel with zero regressions across other scenes.
 
 ## Verification Method
-- Test Suite: `npm test` (356/356 tests passing, 0 errors)
-- Typecheck: `npx tsc --noEmit` (0 errors)
-- Production Build: `npm run build` (`dist/` created cleanly)
+- E2E Test Suite: `npm test` (363/363 tests passing across 69 suites)
+- Stress Harness: `npx tsx test/adversarial_m1_stress.ts` (39/39 passing)
+- Challenger Harness: `npx tsx test/challenger_m1_2_stress.ts` (32/32 passing)
+- Production Build: `npm run build` (Exit code 0, clean TypeScript compilation and bundle)
+- Independent Sentinel Victory Audit: VERDICT: VICTORY CONFIRMED (Phases A, B, C PASSED)

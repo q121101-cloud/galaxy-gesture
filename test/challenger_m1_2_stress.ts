@@ -236,11 +236,11 @@ export async function runChallengerTests() {
 
   await test('S2.2: First registered scene auto-activates immediately', async () => {
     const sm = new SceneManager();
-    const sceneA = createMockScene('gargantua', 350000);
+    const sceneA = createMockScene('gargantua', 200000);
     await sm.registerScene(sceneA, mockRenderer, mockCamera);
 
     expect(sm.getActiveSceneName()).toBe('gargantua');
-    expect(sm.getParticleCount()).toBe(350000);
+    expect(sm.getParticleCount()).toBe(200000);
     expect(sceneA.initCalls).toBe(1);
     expect(sceneA.enterCalls).toBe(1);
   });

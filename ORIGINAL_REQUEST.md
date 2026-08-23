@@ -79,3 +79,42 @@ The project must build cleanly (`npm run build`) with zero errors and be deploya
 - [ ] `npm run build` exits with code 0 and produces a working `dist/` folder.
 - [ ] The built app loads correctly when served (`npm run preview` or static server).
 - [ ] A `vercel.json` or equivalent config is present and correct.
+
+## Follow-up — 2026-08-23T10:17:14Z
+
+This is a single self-contained fix; keep it small and focused.
+
+In the existing Interstellar Gesture Experience project, make two targeted adjustments to the Gargantua black hole scene:
+
+1. **Reduce particle count** from the current 350,000+ down to exactly **200,000 particles**.
+2. **Slow down the overall animation/rotation speed** — the scene currently feels too fast; reduce all motion speeds (particle orbit speed, accretion disk rotation, and any scene rotation driven by gestures or auto-rotation) by approximately 40–50% so the scene feels cinematic and weightful rather than frantic.
+
+Working directory: `/Users/quan/.gemini/antigravity/scratch/galaxy-gesture`
+Integrity mode: demo
+
+---
+
+## Requirements
+
+### R1. Particle Count Reduction
+The Gargantua scene's particle system must be configured for exactly 200,000 particles. All other scenes (Wormhole, Tesseract) remain unchanged.
+
+### R2. Speed Reduction
+All motion in the Gargantua scene — including particle orbital velocity, accretion disk rotation, auto-rotation, and gesture-driven rotation speed — must be noticeably slower than the current implementation. The target feel is slow, majestic, and gravitationally heavy.
+
+---
+
+## Acceptance Criteria
+
+### Particle Count
+- [ ] The Gargantua scene initializes with exactly 200,000 particles (verifiable by reading the particle buffer size or a console log).
+- [ ] No regression in other scenes (Wormhole and Tesseract unaffected).
+
+### Speed
+- [ ] Particle orbital speed is visibly slower than before (subjectively: feels like watching a real accretion disk, not a spinning fan).
+- [ ] Accretion disk and any auto-rotation speed is reduced by at least 40% from current values.
+- [ ] Gesture-driven rotation remains responsive but smoother and less twitchy.
+
+### Build
+- [ ] `npm run build` exits with code 0 after the changes.
+

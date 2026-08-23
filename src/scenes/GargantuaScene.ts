@@ -50,8 +50,8 @@ void main() {
     // Breathing/expansion driven by hand openness [0.0 = clutched fist, 1.0 = wide open]
     float currentRadius = aOrbitRadius * (0.85 + uOpenness * 0.35);
 
-    // Inward spiral precession towards ISCO
-    float spiral = sin(currentRadius * 0.15 - t * 0.4 + aPhase) * 0.35;
+    // Inward spiral precession towards ISCO (slowed down by 45% for majestic cinematic flow)
+    float spiral = sin(currentRadius * 0.15 - t * 0.22 + aPhase) * 0.35;
     
     pos.x = cos(currentAngle) * currentRadius;
     pos.z = sin(currentAngle) * currentRadius;
@@ -76,14 +76,14 @@ void main() {
     float jetSign = sign(position.y);
     if (abs(jetSign) < 0.1) jetSign = 1.0;
     
-    // Relativistic jet ejection speed along +/- Y
-    float jetSpeed = 28.0 + aOrbitSpeed * 10.0;
+    // Relativistic jet ejection speed along +/- Y (slowed down by 45% for heavy cinematic feel)
+    float jetSpeed = 15.4 + aOrbitSpeed * 5.5;
     float maxJetHeight = 90.0;
     float jetProgress = mod(abs(position.y) + jetSpeed * t + aPhase * 10.0, maxJetHeight);
     
     // Helical magnetic confinement envelope: r_helix = r0 * sqrt(y)
     float helixRadius = (1.5 + sqrt(jetProgress) * 0.8) * (0.9 + uOpenness * 0.3);
-    float helixAngle = jetProgress * 0.45 + aOrbitAngle + t * 4.0;
+    float helixAngle = jetProgress * 0.45 + aOrbitAngle + t * 2.2;
     
     pos.x = cos(helixAngle) * helixRadius;
     pos.z = sin(helixAngle) * helixRadius;
@@ -95,7 +95,7 @@ void main() {
   }
   // 3. Gravitational Halo Stardust (Type 3)
   else {
-    float orbitAngle = aOrbitAngle + aOrbitSpeed * t * 0.3;
+    float orbitAngle = aOrbitAngle + aOrbitSpeed * t * 0.165;
     vec3 orbitAxis = normalize(aVelocity);
     pos = rotateAxis(position * (0.9 + uOpenness * 0.2), orbitAxis, orbitAngle);
     
@@ -157,7 +157,7 @@ export interface GargantuaSceneOptions {
  * - Photon Sphere boundary (Rph = 1.5 Rs = 6.0)
  * - Relativistic Doppler accretion disk with Shakura-Sunyaev temperature gradient
  * - Gravitationally warped upper and lower lensing halo crown arches
- * - >= 300,000 GPU Keplerian particles with relativistic polar jets
+ * - Exactly 200,000 GPU Keplerian particles with relativistic polar jets
  * - Dynamic gesture responsiveness (openness, pinch time-dilation, tilt/pitch)
  */
 export class GargantuaScene extends BaseScene {
@@ -187,7 +187,7 @@ export class GargantuaScene extends BaseScene {
 
   constructor(options?: GargantuaSceneOptions) {
     super();
-    this._particleCount = options?.particleCount ?? 350000;
+    this._particleCount = options?.particleCount ?? 200000;
     this.schwarzschildRadius = options?.schwarzschildRadius ?? 4.0;
     this.photonSphereRadius = this.schwarzschildRadius * 1.5; // 6.0
     this.innerDiskRadius = options?.innerDiskRadius ?? this.schwarzschildRadius * 3.0; // 12.0 (ISCO)
@@ -213,7 +213,7 @@ export class GargantuaScene extends BaseScene {
     // 3. Build Relativistic Doppler Accretion Disk (Equatorial & Warped Dual Lensing Arches)
     this.buildAccretionDisk();
 
-    // 4. Build >= 300,000 GPU Keplerian Particle System & Relativistic Jets
+    // 4. Build 200,000 GPU Keplerian Particle System & Relativistic Jets
     this.buildGpuParticles();
 
     // 5. Build Gravitational Lensing Screen Quad Material
@@ -310,7 +310,7 @@ export class GargantuaScene extends BaseScene {
   }
 
   /**
-   * Build >= 300,000 GPU Keplerian Particle System
+   * Build 200,000 GPU Keplerian Particle System
    */
   private buildGpuParticles(): void {
     const count = this._particleCount;
@@ -357,18 +357,18 @@ export class GargantuaScene extends BaseScene {
       let velZ = 0;
 
       if (i < innerCount) {
-        // Inner ISCO Core
+        // Inner ISCO Core (slowed down by 45%)
         type = 0;
         r = this.innerDiskRadius + Math.random() * (this.innerDiskRadius * 0.6);
-        speed = 2.4 / Math.pow(r / this.innerDiskRadius, 1.5);
+        speed = 1.32 / Math.pow(r / this.innerDiskRadius, 1.5);
         col = colorWhiteGold;
         size = 1.4 + Math.random() * 2.8;
       } else if (i < innerCount + diskCount) {
-        // Accretion Disk Spiral Arms
+        // Accretion Disk Spiral Arms (slowed down by 45%)
         type = 1;
         const norm = Math.random();
         r = this.innerDiskRadius + Math.pow(norm, 1.3) * (this.outerDiskRadius - this.innerDiskRadius);
-        speed = 1.8 / Math.pow(r / this.innerDiskRadius, 1.5);
+        speed = 0.99 / Math.pow(r / this.innerDiskRadius, 1.5);
         if (norm < 0.3) {
           col = colorSolarAmber;
         } else if (norm < 0.7) {
@@ -378,24 +378,24 @@ export class GargantuaScene extends BaseScene {
         }
         size = 1.0 + Math.random() * 2.0;
       } else if (i < innerCount + diskCount + jetCount) {
-        // Relativistic Polar Jets
+        // Relativistic Polar Jets (slowed down by 45%)
         type = 2;
         r = 1.0 + Math.random() * 3.0;
         const jetSign = Math.random() > 0.5 ? 1 : -1;
         posY = jetSign * (this.schwarzschildRadius + Math.random() * 80.0);
-        speed = 1.5 + Math.random() * 2.5;
+        speed = 0.825 + Math.random() * 1.375;
         col = colorJetCyan;
         size = 1.6 + Math.random() * 3.2;
-        velY = jetSign * (25.0 + Math.random() * 15.0);
+        velY = jetSign * (13.75 + Math.random() * 8.25);
       } else {
-        // Halo Stardust
+        // Halo Stardust (slowed down by 45%)
         type = 3;
         const phi = Math.acos(2.0 * Math.random() - 1.0);
         r = this.innerDiskRadius * 1.2 + Math.random() * this.outerDiskRadius * 1.5;
         posX = r * Math.sin(phi) * Math.cos(theta);
         posY = r * Math.sin(phi) * Math.sin(theta);
         posZ = r * Math.cos(phi);
-        speed = 0.6 / Math.sqrt(r);
+        speed = 0.33 / Math.sqrt(r);
         col = colorStardust;
         size = 0.8 + Math.random() * 1.5;
         velX = (Math.random() - 0.5);
@@ -489,9 +489,9 @@ export class GargantuaScene extends BaseScene {
       this.particleMaterial.uniforms.uOpenness.value = openness;
     }
 
-    // 3. Subtle slow rotation of the photon sphere ring & warped arches
+    // 3. Subtle slow rotation of the photon sphere ring & warped arches (reduced by 45%)
     if (this.photonRingMesh) {
-      this.photonRingMesh.rotation.z += effectiveDelta * 0.12;
+      this.photonRingMesh.rotation.z += effectiveDelta * 0.066;
     }
 
     // 4. Orient upper and lower warped arches towards camera for dynamic lensing silhouette

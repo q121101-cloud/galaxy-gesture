@@ -70,8 +70,8 @@ void main() {
   float r = length(pos.xz);
   vRadius = r;
 
-  // Keplerian angular velocity: Omega proportional to r^(-1.5)
-  float omega = 1.8 / pow(max(r, 0.1), 1.5);
+  // Keplerian angular velocity: Omega proportional to r^(-1.5) (slowed down by 45% for majestic cinematic flow)
+  float omega = 0.99 / pow(max(r, 0.1), 1.5);
   vOrbitalSpeed = omega * r;
   float angle = omega * uTime * uTimeDilation;
 
@@ -90,7 +90,7 @@ void main() {
 
   // Vertical plasma flare & turbulence: disk flaring h(r) = h0 * (r / r_in)^1.1
   float flare = uDiskThickness * pow(max(r, 0.1) / max(uInnerRadius, 0.1), 1.15);
-  float plasmaTurb = snoise(vec3(rotatedPos.xz * 0.25, uTime * 0.5 * uTimeDilation)) * flare * 0.45;
+  float plasmaTurb = snoise(vec3(rotatedPos.xz * 0.25, uTime * 0.275 * uTimeDilation)) * flare * 0.45;
   rotatedPos.y += plasmaTurb;
 
   vec4 worldPos = modelMatrix * vec4(rotatedPos, 1.0);

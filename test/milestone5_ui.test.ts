@@ -33,12 +33,12 @@ describe('Milestone 5 - Suite 1: GlassmorphicHUD Telemetry & UI Controls', () =>
     });
   });
 
-  it('M5.1.1: GlassmorphicHUD updates scene name and active particle counter (>300,000)', () => {
+  it('M5.1.1: GlassmorphicHUD updates scene name and active particle counter (200,000)', () => {
     const telemetry: HUDTelemetry = {
       currentScene: 'gargantua',
       fps: 60,
       frameTimeMs: 16.6,
-      particleCount: 350000,
+      particleCount: 200000,
       gestureName: 'Fist (Singularity)',
       timeDilation: 1.0,
       isRecording: false,
@@ -59,7 +59,7 @@ describe('Milestone 5 - Suite 1: GlassmorphicHUD Telemetry & UI Controls', () =>
     const valFps = doc.getElementById('val-fps');
 
     expect(valScene?.textContent).toBe('GARGANTUA');
-    expect(valParticles?.textContent).toBe('350,000');
+    expect(valParticles?.textContent).toBe('200,000');
     expect(valFps?.textContent).toBe('60');
   });
 
@@ -74,7 +74,7 @@ describe('Milestone 5 - Suite 1: GlassmorphicHUD Telemetry & UI Controls', () =>
       currentScene: 'gargantua',
       fps: 59,
       frameTimeMs: 16.9,
-      particleCount: 350000,
+      particleCount: 200000,
       gestureName: 'Pinch (Time Dilation)',
       timeDilation: 0.2,
       isRecording: false,
@@ -96,7 +96,7 @@ describe('Milestone 5 - Suite 1: GlassmorphicHUD Telemetry & UI Controls', () =>
       currentScene: 'gargantua',
       fps: 60,
       frameTimeMs: 16.6,
-      particleCount: 350000,
+      particleCount: 200000,
       gestureName: 'Open Palm',
       timeDilation: 1.0,
       isRecording: false,

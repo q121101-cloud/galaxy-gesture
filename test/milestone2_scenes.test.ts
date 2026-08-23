@@ -134,14 +134,13 @@ describe('Milestone 2 - Suite 2: Gargantua Black Hole, Accretion Disk & Particle
     expect(gargantua.outerDiskRadius).toBeGreaterThan(gargantua.innerDiskRadius);
   });
 
-  it('M2.2.2: Particle count strictly meets requirement of >= 300,000 GPU particles', async () => {
-    const gargantua = new GargantuaScene({ particleCount: 350000 });
+  it('M2.2.2: Particle count initializes with exactly 200,000 GPU particles', async () => {
+    const gargantua = new GargantuaScene();
     const renderer = createMockRenderer();
     const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 1000);
 
     await gargantua.init(renderer, camera);
-    expect(gargantua.particleCount).toBeGreaterThanOrEqual(300000);
-    expect(gargantua.particleCount).toBe(350000);
+    expect(gargantua.particleCount).toBe(200000);
   });
 
   it('M2.2.3: Scene graph contains Event Horizon, Photon Ring, Equatorial Disk, and Warped Arches', async () => {
@@ -165,7 +164,7 @@ describe('Milestone 2 - Suite 2: Gargantua Black Hole, Accretion Disk & Particle
   });
 
   it('M2.2.4: GPU Keplerian particles geometry contains all required attribute buffers', async () => {
-    const gargantua = new GargantuaScene({ particleCount: 350000 });
+    const gargantua = new GargantuaScene();
     const renderer = createMockRenderer();
     const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 1000);
 
@@ -179,7 +178,7 @@ describe('Milestone 2 - Suite 2: Gargantua Black Hole, Accretion Disk & Particle
     expect(pointsObj).not.toBeNull();
     const geo = pointsObj!.geometry;
     expect(geo.getAttribute('position')).toBeDefined();
-    expect(geo.getAttribute('position').count).toBe(350000);
+    expect(geo.getAttribute('position').count).toBe(200000);
     expect(geo.getAttribute('aVelocity')).toBeDefined();
     expect(geo.getAttribute('aColor')).toBeDefined();
     expect(geo.getAttribute('aSize')).toBeDefined();
@@ -480,7 +479,7 @@ describe('Milestone 2 - Suite 6: Multi-Scene Manager Integration & Seamless Cycl
     await sm.registerScene(tesseract, renderer, camera);
 
     expect(sm.getActiveSceneName()).toBe('gargantua');
-    expect(sm.getParticleCount()).toBeGreaterThanOrEqual(300000);
+    expect(sm.getParticleCount()).toBe(200000);
   });
 
   it('M2.6.2: Circular nextScene navigates Gargantua -> Wormhole -> Tesseract -> Gargantua', async () => {
