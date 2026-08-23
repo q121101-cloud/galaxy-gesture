@@ -1,9 +1,8 @@
 import { Engine } from './core/Engine';
 import { MediaPipeWrapper, TrackerStatusMessage } from './gestures/MediaPipeWrapper';
 import { GestureState } from './core/types';
-import { GargantuaScene } from './scenes/GargantuaScene';
+import { GalaxyScene } from './scenes/GalaxyScene';
 import { WormholeScene } from './scenes/WormholeScene';
-import { TesseractScene } from './scenes/TesseractScene';
 import { AudioEngine } from './audio/AudioEngine';
 import { GlassmorphicHUD } from './ui/GlassmorphicHUD';
 import { WebcamInset } from './ui/WebcamInset';
@@ -23,23 +22,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 1. Initialize High-Performance WebGL2 Engine
   const engine = new Engine({
     canvas,
-    antialias: false, // Disabled for maximum particle fillrate (300k+ particles)
+    antialias: false,
     powerPreference: 'high-performance',
     maxPixelRatio: 1.5,
   });
 
-  // 2. Initialize Procedural Web Audio Engine (100% synthesized, zero audio files)
+  // 2. Initialize Procedural Web Audio Engine
   const audioEngine = new AudioEngine();
   engine.setAudioEngine(audioEngine);
 
-  // 3. Register the 3 Cinematic Interstellar Scenes
-  const gargantua = new GargantuaScene();
+  // 3. Register the 2 Cinematic Interstellar Scenes (GalaxyScene as default, WormholeScene second)
+  const galaxy = new GalaxyScene();
   const wormhole = new WormholeScene();
-  const tesseract = new TesseractScene();
 
-  await engine.registerScene(gargantua);
+  await engine.registerScene(galaxy);
   await engine.registerScene(wormhole);
-  await engine.registerScene(tesseract);
 
   // 4. Initialize UI Subsystems (HUD, Mini-Cam Inset, Gesture Hints, Video Recorder)
   const webcamInset = new WebcamInset();
@@ -63,7 +60,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const hud = new GlassmorphicHUD({
     onSceneSelect: (sceneName: string) => {
       engine.switchScene(sceneName, { duration: 1.0, type: 'crossfade' });
-      gestureHints.setScene(sceneName);
     },
     onAudioToggle: () => {
       isAudioMuted = !isAudioMuted;
@@ -92,7 +88,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       await audioEngine.init().catch(() => {});
       hud.updateTrackerStatus({
         status: 'FALLBACK',
-        message: 'Keyboard Mode Active: [SPACE] Singularity | [W/S] Pitch | [A/D] Roll | [P] Pinch',
+        message: 'Keyboard Mode Active: [SPACE] Morph Scene | [W/S] Pitch | [A/D] Roll | [P] Pinch',
       });
       webcamInset.setStateBadge('fallback');
     },
@@ -121,9 +117,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     },
   });
 
-  // 6. Connect Real-Time Telemetry Pipeline
+  // 6. Connect Real-Time Telemetry Pipeline & Transition Listeners
   engine.onTelemetry((telemetry) => {
     hud.updateTelemetry(telemetry);
+  });
+
+  engine.sceneManager.onTransitionStart((_from, to) => {
+    hud.setActiveScene(to);
+    gestureHints.setScene(to);
   });
 
   // 7. Comprehensive Keyboard Controls & Hotkeys
@@ -131,24 +132,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.target && (e.target as HTMLElement).matches('input, textarea')) return;
 
     if (e.key === '1') {
-      engine.switchScene('gargantua', { duration: 1.0, type: 'crossfade' });
-      hud.setActiveScene('gargantua');
-      gestureHints.setScene('gargantua');
+      engine.switchScene('galaxy', { duration: 1.0, type: 'crossfade' });
     } else if (e.key === '2') {
       engine.switchScene('wormhole', { duration: 1.0, type: 'crossfade' });
-      hud.setActiveScene('wormhole');
-      gestureHints.setScene('wormhole');
-    } else if (e.key === '3') {
-      engine.switchScene('tesseract', { duration: 1.0, type: 'crossfade' });
-      hud.setActiveScene('tesseract');
-      gestureHints.setScene('tesseract');
     } else if (e.key === ' ' || e.key === 'Tab') {
       e.preventDefault();
       engine.sceneManager.nextScene({ duration: 1.0, type: 'crossfade' });
-      const nextName = engine.sceneManager.getActiveSceneName();
-      audioEngine.setScene(nextName, 1.0);
-      hud.setActiveScene(nextName);
-      gestureHints.setScene(nextName);
+    } else if (e.key === 'b' || e.key === 'B' || e.key === 'g' || e.key === 'G') {
+      // [B / G] Key: Toggle Rainbow Mode on Galaxy Scene
+      galaxy.toggleRainbow();
     } else if (e.key === 'h' || e.key === 'H') {
       // [H] Key: Toggle Clean View for screen recording / TikTok capture
       hud.toggleHUD();
@@ -218,5 +210,5 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 9. Start Main WebGL Animation Loop
   engine.start();
 
-  console.log('🌌 [Interstellar] Gesture Experience fully initialized (Engine, Scenes, Audio, Gestures, HUD, Recorder).');
+  console.log('🌌 [Interstellar] Gesture Experience fully initialized (Engine, Galaxy & Wormhole Scenes, Audio, Gestures, HUD, Recorder).');
 });

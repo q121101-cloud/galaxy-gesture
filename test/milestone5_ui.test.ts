@@ -35,7 +35,7 @@ describe('Milestone 5 - Suite 1: GlassmorphicHUD Telemetry & UI Controls', () =>
 
   it('M5.1.1: GlassmorphicHUD updates scene name and active particle counter (200,000)', () => {
     const telemetry: HUDTelemetry = {
-      currentScene: 'gargantua',
+      currentScene: 'galaxy',
       fps: 60,
       frameTimeMs: 16.6,
       particleCount: 200000,
@@ -58,7 +58,7 @@ describe('Milestone 5 - Suite 1: GlassmorphicHUD Telemetry & UI Controls', () =>
     const valParticles = doc.getElementById('val-particles');
     const valFps = doc.getElementById('val-fps');
 
-    expect(valScene?.textContent).toBe('GARGANTUA');
+    expect(valScene?.textContent).toBe('GALAXY');
     expect(valParticles?.textContent).toBe('200,000');
     expect(valFps?.textContent).toBe('60');
   });
@@ -71,7 +71,7 @@ describe('Milestone 5 - Suite 1: GlassmorphicHUD Telemetry & UI Controls', () =>
 
     // Relativistic dilation state
     hud.updateTelemetry({
-      currentScene: 'gargantua',
+      currentScene: 'galaxy',
       fps: 59,
       frameTimeMs: 16.9,
       particleCount: 200000,
@@ -93,7 +93,7 @@ describe('Milestone 5 - Suite 1: GlassmorphicHUD Telemetry & UI Controls', () =>
 
     // Supernova expand state
     hud.updateTelemetry({
-      currentScene: 'gargantua',
+      currentScene: 'galaxy',
       fps: 60,
       frameTimeMs: 16.6,
       particleCount: 200000,
@@ -167,14 +167,13 @@ describe('Milestone 5 - Suite 1: GlassmorphicHUD Telemetry & UI Controls', () =>
     hud.setActiveScene('wormhole');
     const doc = (globalThis as any).document;
     const btnWormhole = doc.getElementById('btn-scene-wormhole');
-    const btnGargantua = doc.getElementById('btn-scene-gargantua');
+    const btnGalaxy = doc.getElementById('btn-scene-galaxy');
 
     expect(btnWormhole?.classList.contains('active')).toBe(true);
-    expect(btnGargantua?.classList.contains('active')).toBe(false);
+    expect(btnGalaxy?.classList.contains('active')).toBe(false);
 
-    hud.setActiveScene('tesseract');
-    const btnTesseract = doc.getElementById('btn-scene-tesseract');
-    expect(btnTesseract?.classList.contains('active')).toBe(true);
+    hud.setActiveScene('galaxy');
+    expect(btnGalaxy?.classList.contains('active')).toBe(true);
     expect(btnWormhole?.classList.contains('active')).toBe(false);
   });
 });
@@ -280,17 +279,14 @@ describe('Milestone 5 - Suite 3: Contextual GestureHints Guide Cards', () => {
     expect(swipeCard?.classList.contains('active')).toBe(true);
   });
 
-  it('M5.3.3: Contextual labels update when navigating across 3 interstellar scenes', () => {
-    hints.setScene('gargantua');
+  it('M5.3.3: Contextual labels update when navigating between galaxy and wormhole scenes', () => {
+    hints.setScene('galaxy');
     const doc = (globalThis as any).document;
     const openFistCard = doc.getElementById('hint-open-fist');
-    expect(openFistCard?.textContent).toContain('Accretion Singularity');
+    expect(openFistCard?.textContent).toContain('Core Expansion');
 
     hints.setScene('wormhole');
     expect(openFistCard?.textContent).toContain('Throat Warp Speed');
-
-    hints.setScene('tesseract');
-    expect(openFistCard?.textContent).toContain('5D Lattice Projection');
   });
 
   it('M5.3.4: Container visibility toggles smoothly', () => {

@@ -3,18 +3,14 @@
  * 
  * Deep unit and integration tests for:
  * 1. ReverbGenerator (algorithmic impulse response synthesis, duration, decay, reverse, decorrelation)
- * 2. GargantuaOrganSynth (6-rank additive synthesis, saturation curve, cascaded filter, LFO, gesture intensity)
- * 3. WormholePadSynth (6 detuned supersaw oscillators, stereo delay chorus, resonant bandpass, pitch glide)
- * 4. TesseractClockworkSynth (lookahead scheduler, micro-clicks, sub-harmonics, time dilation)
- * 5. GestureAudioCoupler (metric mapping, parameter sanitization, formula accuracy)
- * 6. AudioEngine (master audio graph, autoplay unlock, equal-power crossfader, mute, MediaStreamDestination)
+ * 2. WormholePadSynth (6 detuned supersaw oscillators, stereo delay chorus, resonant bandpass, pitch glide)
+ * 3. GestureAudioCoupler (metric mapping, parameter sanitization, formula accuracy)
+ * 4. AudioEngine (master audio graph, autoplay unlock, equal-power crossfader, mute, MediaStreamDestination)
  */
 
 import { describe, it, expect, MockAudioContext } from './e2e_harness';
 import { generateReverbImpulse, createCathedralReverb } from '../src/audio/ReverbGenerator';
-import { GargantuaOrganSynth, GARGANTUA_PIPE_RANKS } from '../src/audio/GargantuaOrganSynth';
 import { WormholePadSynth, WORMHOLE_PAD_VOICES } from '../src/audio/WormholePadSynth';
-import { TesseractClockworkSynth } from '../src/audio/TesseractClockworkSynth';
 import { GestureAudioCoupler } from '../src/audio/GestureAudioCoupler';
 import { AudioEngine } from '../src/audio/AudioEngine';
 import { GestureState } from '../src/core/types';
@@ -71,61 +67,9 @@ describe('Worker 4 - Procedural Web Audio Synthesis & DSP Modules', () => {
   });
 
   // ==========================================================================
-  // 2. GargantuaOrganSynth Tests
+  // 2. WormholePadSynth Tests
   // ==========================================================================
-  it('M4.2.1: GargantuaOrganSynth builds 6 harmonic pipe ranks with correct root frequencies', () => {
-    const ctx = new MockAudioContext();
-    const organ = new GargantuaOrganSynth(ctx as any, 32.703); // C1 root
-
-    expect(GARGANTUA_PIPE_RANKS.length).toBe(6);
-    expect(GARGANTUA_PIPE_RANKS[0].footage).toBe("32'");
-    expect(GARGANTUA_PIPE_RANKS[0].type).toBe('sine');
-    expect(GARGANTUA_PIPE_RANKS[1].footage).toBe("16'");
-    expect(GARGANTUA_PIPE_RANKS[1].type).toBe('triangle');
-    expect(GARGANTUA_PIPE_RANKS[3].footage).toBe("4'");
-    expect(GARGANTUA_PIPE_RANKS[3].type).toBe('sawtooth');
-
-    const outNode = organ.getOutputNode();
-    expect(outNode).toBeDefined();
-    expect(outNode.gain.value).toBeCloseTo(0.0001, 3);
-  });
-
-  it('M4.2.2: GargantuaOrganSynth starts with envelope attack and stops with release', () => {
-    const ctx = new MockAudioContext();
-    const organ = new GargantuaOrganSynth(ctx as any);
-
-    organ.start(ctx.currentTime, 0.5);
-    expect(organ.getOutputNode().gain.value).toBeGreaterThan(0.0);
-
-    organ.stop(ctx.currentTime, 0.2);
-    expect(organ.getOutputNode().gain.value).toBeCloseTo(0.0, 2);
-  });
-
-  it('M4.2.3: GargantuaOrganSynth modulates cutoff, resonance, gain, and intensity safely', () => {
-    const ctx = new MockAudioContext();
-    const organ = new GargantuaOrganSynth(ctx as any);
-
-    organ.start();
-    organ.setCutoff(650);
-    organ.setResonance(4.0);
-    organ.setGain(0.9);
-    organ.setIntensity(0.85);
-
-    expect(organ.getOutputNode().gain.value).toBeGreaterThan(0.0);
-
-    // Boundary / NaN checks
-    organ.setCutoff(NaN);
-    organ.setResonance(Infinity);
-    organ.setGain(-1.0);
-    organ.setIntensity(2.0);
-
-    organ.dispose();
-  });
-
-  // ==========================================================================
-  // 3. WormholePadSynth Tests
-  // ==========================================================================
-  it('M4.3.1: WormholePadSynth instantiates 6 supersaw voices and chorus delay lines', () => {
+  it('M4.2.1: WormholePadSynth instantiates 6 supersaw voices and chorus delay lines', () => {
     const ctx = new MockAudioContext();
     const pad = new WormholePadSynth(ctx as any);
 
@@ -138,7 +82,7 @@ describe('Worker 4 - Procedural Web Audio Synthesis & DSP Modules', () => {
     expect(out.gain.value).toBeCloseTo(0.0001, 3);
   });
 
-  it('M4.3.2: WormholePadSynth start, stop, pitch glide, and filter modulation operate cleanly', () => {
+  it('M4.2.2: WormholePadSynth start, stop, pitch glide, and filter modulation operate cleanly', () => {
     const ctx = new MockAudioContext();
     const pad = new WormholePadSynth(ctx as any);
 
@@ -155,32 +99,9 @@ describe('Worker 4 - Procedural Web Audio Synthesis & DSP Modules', () => {
   });
 
   // ==========================================================================
-  // 4. TesseractClockworkSynth Tests
+  // 3. GestureAudioCoupler Tests
   // ==========================================================================
-  it('M4.4.1: TesseractClockworkSynth starts scheduler and handles relativistic time dilation', () => {
-    const ctx = new MockAudioContext();
-    const clock = new TesseractClockworkSynth(ctx as any);
-
-    clock.start(ctx.currentTime, 0.5);
-    expect(clock.getOutputNode().gain.value).toBeGreaterThan(0.0);
-
-    // Normal time dilation tau = 1.0 -> 72 BPM
-    clock.setTimeDilation(1.0);
-
-    // Relativistic pinch dilation tau = 0.2 -> dilated clock rate
-    clock.setTimeDilation(0.2);
-
-    // Boundary extreme dilation tau = 0.001 clamped to >= 0.1
-    clock.setTimeDilation(0.001);
-
-    clock.stop(ctx.currentTime, 0.2);
-    clock.dispose();
-  });
-
-  // ==========================================================================
-  // 5. GestureAudioCoupler Tests
-  // ==========================================================================
-  it('M4.5.1: GestureAudioCoupler sanitizes invalid parameters against NaN and Infinity', () => {
+  it('M4.3.1: GestureAudioCoupler sanitizes invalid parameters against NaN and Infinity', () => {
     const ctx = new MockAudioContext();
     const coupler = new GestureAudioCoupler(ctx as any);
 
@@ -191,7 +112,7 @@ describe('Worker 4 - Procedural Web Audio Synthesis & DSP Modules', () => {
     expect(coupler.sanitizeParam(99999, 20, 20000, 450)).toBe(20000);
   });
 
-  it('M4.5.2: GestureAudioCoupler updates filter cutoff and volume according to formulas', () => {
+  it('M4.3.2: GestureAudioCoupler updates filter cutoff and volume according to formulas', () => {
     const ctx = new MockAudioContext();
     const coupler = new GestureAudioCoupler(ctx as any);
 
@@ -200,9 +121,7 @@ describe('Worker 4 - Procedural Web Audio Synthesis & DSP Modules', () => {
     const reverbDryGain = ctx.createGain();
     const masterGain = ctx.createGain();
 
-    const organ = new GargantuaOrganSynth(ctx as any);
     const pad = new WormholePadSynth(ctx as any);
-    const clock = new TesseractClockworkSynth(ctx as any);
 
     const gesture: GestureState = {
       hasHand: true,
@@ -219,8 +138,8 @@ describe('Worker 4 - Procedural Web Audio Synthesis & DSP Modules', () => {
 
     coupler.update(
       gesture,
-      'gargantua',
-      { gargantua: organ, wormhole: pad, tesseract: clock },
+      'galaxy',
+      { galaxy: pad, wormhole: pad },
       {
         masterFilter: masterFilter as any,
         reverbWetGain: reverbWetGain as any,
@@ -237,7 +156,7 @@ describe('Worker 4 - Procedural Web Audio Synthesis & DSP Modules', () => {
     coupler.update(
       gesture,
       'wormhole',
-      { gargantua: organ, wormhole: pad, tesseract: clock },
+      { galaxy: pad, wormhole: pad },
       {
         masterFilter: masterFilter as any,
         reverbWetGain: reverbWetGain as any,
@@ -246,28 +165,13 @@ describe('Worker 4 - Procedural Web Audio Synthesis & DSP Modules', () => {
       }
     );
 
-    // Test with tesseract active
-    coupler.update(
-      gesture,
-      'tesseract',
-      { gargantua: organ, wormhole: pad, tesseract: clock },
-      {
-        masterFilter: masterFilter as any,
-        reverbWetGain: reverbWetGain as any,
-        reverbDryGain: reverbDryGain as any,
-        masterGain: masterGain as any,
-      }
-    );
-
-    organ.dispose();
     pad.dispose();
-    clock.dispose();
   });
 
   // ==========================================================================
-  // 6. AudioEngine Master Graph & Lifecycle Tests
+  // 4. AudioEngine Master Graph & Lifecycle Tests
   // ==========================================================================
-  it('M4.6.1: AudioEngine initializes master graph, reverb IR, and default gargantua scene', async () => {
+  it('M4.4.1: AudioEngine initializes master graph, reverb IR, and default galaxy scene', async () => {
     const ctx = new MockAudioContext();
     const engine = new AudioEngine(ctx as any);
 
@@ -281,7 +185,7 @@ describe('Worker 4 - Procedural Web Audio Synthesis & DSP Modules', () => {
     engine.dispose();
   });
 
-  it('M4.6.2: AudioEngine performs equal-power scene crossfade between scenes', async () => {
+  it('M4.4.2: AudioEngine performs equal-power scene crossfade between galaxy and wormhole', async () => {
     const ctx = new MockAudioContext();
     const engine = new AudioEngine(ctx as any);
     await engine.init();
@@ -290,16 +194,13 @@ describe('Worker 4 - Procedural Web Audio Synthesis & DSP Modules', () => {
     engine.setScene('wormhole', 1.5);
     expect(typeof engine.setScene).toBe('function');
 
-    // Rapid switch to tesseract
-    engine.setScene('tesseract', 1.0);
-
-    // Switch back to gargantua
-    engine.setScene('gargantua', 0.5);
+    // Switch back to galaxy
+    engine.setScene('galaxy', 0.5);
 
     engine.dispose();
   });
 
-  it('M4.6.3: AudioEngine volume control and mute operate smoothly without clicks', async () => {
+  it('M4.4.3: AudioEngine volume control and mute operate smoothly without clicks', async () => {
     const ctx = new MockAudioContext();
     const engine = new AudioEngine(ctx as any);
     await engine.init();

@@ -4,13 +4,11 @@
  * Couples real-time 3D hand tracking metrics (palm openness, pinch tightness,
  * relativistic time dilation, rotational roll, kinetic intensity) to procedural
  * audio synthesis parameters (cascaded filter cutoffs, resonance, master presence,
- * reverb wet/dry matrix, and lookahead clock dilation).
+ * reverb wet/dry matrix, and ambient pad modulation).
  */
 
 import { GestureState } from '../core/types';
-import { GargantuaOrganSynth } from './GargantuaOrganSynth';
 import { WormholePadSynth } from './WormholePadSynth';
-import { TesseractClockworkSynth } from './TesseractClockworkSynth';
 
 export interface CouplerTargetNodes {
   masterFilter: BiquadFilterNode;
@@ -35,15 +33,14 @@ export class GestureAudioCoupler {
   }
 
   /**
-   * Updates all active synths and master processing nodes based on gesture state
+   * Updates active synths and master processing nodes based on gesture state
    */
   public update(
     gestureState: GestureState,
     activeSceneName: string,
     synths: {
-      gargantua?: GargantuaOrganSynth;
+      galaxy?: WormholePadSynth;
       wormhole?: WormholePadSynth;
-      tesseract?: TesseractClockworkSynth;
     },
     targets: CouplerTargetNodes
   ): void {
@@ -99,12 +96,11 @@ export class GestureAudioCoupler {
     // 4. Scene-Specific Synth Modulations
     const normalizedScene = activeSceneName.toLowerCase();
 
-    if (normalizedScene.includes('gargantua') || normalizedScene.includes('blackhole')) {
-      if (synths.gargantua) {
-        // Modulate organ filter cutoff by hand openness: [200Hz, 1800Hz]
-        const organCutoff = this.sanitizeParam(200 + openness * 1600, 20, 20000, 450);
-        synths.gargantua.setCutoff(organCutoff, t);
-        synths.gargantua.setIntensity(intensity, t);
+    if (normalizedScene.includes('galaxy')) {
+      if (synths.galaxy) {
+        // Modulate ambient pad filter cutoff by openness and roll
+        const padCutoff = this.sanitizeParam(350 + 1800 * openness + 400 * Math.abs(roll), 20, 20000, 600);
+        synths.galaxy.setCutoff(padCutoff, t);
       }
     } else if (normalizedScene.includes('wormhole') || normalizedScene.includes('portal')) {
       if (synths.wormhole) {
@@ -114,11 +110,6 @@ export class GestureAudioCoupler {
         // Warp fly-through pitch glide from kinetic intensity
         const glideFactor = this.sanitizeParam(1.0 + intensity * 0.5, 0.5, 2.5, 1.0);
         synths.wormhole.setPitchGlide(glideFactor, t, 0.2);
-      }
-    } else if (normalizedScene.includes('tesseract') || normalizedScene.includes('5d')) {
-      if (synths.tesseract) {
-        // Modulate tesseract clockwork time dilation
-        synths.tesseract.setTimeDilation(tau);
       }
     }
   }

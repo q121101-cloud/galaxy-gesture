@@ -3,23 +3,20 @@
  * 
  * Verifies:
  * 1. BaseScene abstract lifecycle, camera rigging, particle count tracking, and disposal.
- * 2. GargantuaScene: Black hole event horizon, photon ring, relativistic Doppler accretion disk,
- *    upper/lower warped lensing halo arches, and >=300,000 GPU Keplerian particles with polar jets.
+ * 2. GalaxyScene: 200,000 GPU particle spiral galaxy, static outer stars, zooming central core,
+ *    multi-theme support, and 7-color rainbow cycling.
  * 3. WormholeScene: Traversable Ellis wormhole spherical portal, 4D celestial refraction,
  *    Einstein ring boundary, dual starfields, and >=300,000 warp particles.
- * 4. TesseractScene: 5D infinite bookshelf periodic lattice, neon quantum timeline filaments,
- *    temporal coordinate pulses, and >=300,000 quantum motes.
- * 5. TransitionManager: Cinematic cross-fade, smootherstep camera interpolation,
+ * 4. TransitionManager: Cinematic cross-fade, smootherstep camera interpolation,
  *    gravitational ripple metric wave, and duration >= 0.5s.
- * 6. SceneManager & Engine Integration with all 3 scenes.
+ * 5. SceneManager & Engine Integration with GalaxyScene and WormholeScene.
  */
 
 import * as THREE from 'three';
 import { describe, it, expect, MockWebGL2RenderingContext } from './e2e_harness';
 import { BaseScene } from '../src/scenes/BaseScene';
-import { GargantuaScene } from '../src/scenes/GargantuaScene';
+import { GalaxyScene } from '../src/scenes/GalaxyScene';
 import { WormholeScene } from '../src/scenes/WormholeScene';
-import { TesseractScene } from '../src/scenes/TesseractScene';
 import { TransitionManager, smootherstep } from '../src/scenes/TransitionManager';
 import { SceneManager } from '../src/core/SceneManager';
 import { GestureState } from '../src/core/types';
@@ -121,57 +118,36 @@ describe('Milestone 2 - Suite 1: BaseScene Lifecycle & Camera Rigging', () => {
 });
 
 // ============================================================================
-// SUITE 2: GargantuaScene Astrophysics & GPU Particle Verification
+// SUITE 2: GalaxyScene GPU Particle Simulation Verification
 // ============================================================================
-describe('Milestone 2 - Suite 2: Gargantua Black Hole, Accretion Disk & Particles', () => {
-  it('M2.2.1: Gargantua satisfies physical radius relationships (Rs, Rph, ISCO, Rout)', () => {
-    const gargantua = new GargantuaScene({ schwarzschildRadius: 4.0 });
-    expect(gargantua.name).toBe('gargantua');
-    expect(gargantua.schwarzschildRadius).toBe(4.0);
-    expect(gargantua.photonSphereRadius).toBe(6.0); // 1.5 * Rs
-    expect(gargantua.innerDiskRadius).toBe(12.0); // 3.0 * Rs (ISCO)
-    expect(gargantua.outerDiskRadius).toBe(48.0); // 12.0 * Rs
-    expect(gargantua.outerDiskRadius).toBeGreaterThan(gargantua.innerDiskRadius);
+describe('Milestone 2 - Suite 2: Galaxy Spiral Simulation & GPU Particles', () => {
+  it('M2.2.1: GalaxyScene initializes with default 200,000 particles and camera rig', () => {
+    const galaxy = new GalaxyScene();
+    expect(galaxy.name).toBe('galaxy');
+    expect(galaxy.particleCount).toBe(200000);
+    expect(galaxy.cameraRig).toBeDefined();
+    expect(galaxy.cameraRig.defaultPosition.z).toBe(100);
   });
 
-  it('M2.2.2: Particle count initializes with exactly 200,000 GPU particles', async () => {
-    const gargantua = new GargantuaScene();
+  it('M2.2.2: Particle count initializes with exactly 200,000 GPU particles and BufferGeometry', async () => {
+    const galaxy = new GalaxyScene();
     const renderer = createMockRenderer();
     const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 1000);
 
-    await gargantua.init(renderer, camera);
-    expect(gargantua.particleCount).toBe(200000);
+    await galaxy.init(renderer, camera);
+    expect(galaxy.particleCount).toBe(200000);
+    expect(galaxy.scene.children.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('M2.2.3: Scene graph contains Event Horizon, Photon Ring, Equatorial Disk, and Warped Arches', async () => {
-    const gargantua = new GargantuaScene();
+  it('M2.2.3: Scene graph contains Points object with all 11 required attribute buffers', async () => {
+    const galaxy = new GalaxyScene();
     const renderer = createMockRenderer();
     const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 1000);
 
-    await gargantua.init(renderer, camera);
-    // Verify children added to scene
-    expect(gargantua.scene.children.length).toBeGreaterThanOrEqual(5);
-
-    let hasPoints = false;
-    let meshCount = 0;
-    gargantua.scene.traverse((obj) => {
-      if (obj instanceof THREE.Points) hasPoints = true;
-      if (obj instanceof THREE.Mesh) meshCount++;
-    });
-
-    expect(hasPoints).toBe(true);
-    expect(meshCount).toBeGreaterThanOrEqual(4); // Event horizon, photon ring, disk, upper arch, lower arch
-  });
-
-  it('M2.2.4: GPU Keplerian particles geometry contains all required attribute buffers', async () => {
-    const gargantua = new GargantuaScene();
-    const renderer = createMockRenderer();
-    const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 1000);
-
-    await gargantua.init(renderer, camera);
+    await galaxy.init(renderer, camera);
 
     let pointsObj: THREE.Points | null = null;
-    gargantua.scene.traverse((obj) => {
+    galaxy.scene.traverse((obj: THREE.Object3D) => {
       if (obj instanceof THREE.Points) pointsObj = obj;
     });
 
@@ -179,51 +155,158 @@ describe('Milestone 2 - Suite 2: Gargantua Black Hole, Accretion Disk & Particle
     const geo = pointsObj!.geometry;
     expect(geo.getAttribute('position')).toBeDefined();
     expect(geo.getAttribute('position').count).toBe(200000);
-    expect(geo.getAttribute('aVelocity')).toBeDefined();
+    expect(geo.getAttribute('aTargetFist')).toBeDefined();
+    expect(geo.getAttribute('aTargetOpen')).toBeDefined();
     expect(geo.getAttribute('aColor')).toBeDefined();
     expect(geo.getAttribute('aSize')).toBeDefined();
-    expect(geo.getAttribute('aOrbitRadius')).toBeDefined();
-    expect(geo.getAttribute('aOrbitSpeed')).toBeDefined();
-    expect(geo.getAttribute('aOrbitAngle')).toBeDefined();
     expect(geo.getAttribute('aType')).toBeDefined();
+    expect(geo.getAttribute('aOrbitSpeed')).toBeDefined();
+    expect(geo.getAttribute('aOrbitRadius')).toBeDefined();
+    expect(geo.getAttribute('aOrbitAngle')).toBeDefined();
     expect(geo.getAttribute('aPhase')).toBeDefined();
+    expect(geo.getAttribute('aWarpVelocity')).toBeDefined();
   });
 
-  it('M2.2.5: Relativistic Doppler beaming mathematical formulas are physically exact', () => {
-    // Relativistic Doppler factor g = sqrt(1 - Rs/r - beta^2) / (gamma * (1 - beta * cos(theta)))
-    const beta = 0.45; // 0.45c
-    const gamma = 1.0 / Math.sqrt(1.0 - beta * beta);
-    const cosThetaApproach = 1.0;
-    const cosThetaRecede = -1.0;
-
-    const gApproach = 1.0 / (gamma * (1.0 - beta * cosThetaApproach));
-    const gRecede = 1.0 / (gamma * (1.0 - beta * cosThetaRecede));
-
-    expect(gApproach).toBeGreaterThan(1.0);
-    expect(gRecede).toBeLessThan(1.0);
-
-    // Bolometric beaming I_obs = g^4 * I_emit
-    const beamingApproach = Math.pow(gApproach, 4.0);
-    const beamingRecede = Math.pow(gRecede, 4.0);
-
-    expect(beamingApproach).toBeGreaterThan(4.0);
-    expect(beamingRecede).toBeLessThan(0.5);
-    expect(beamingApproach / beamingRecede).toBeGreaterThan(10.0);
-  });
-
-  it('M2.2.6: update() advances simulation time and modulates uniforms with gesture state', async () => {
-    const gargantua = new GargantuaScene();
+  it('M2.2.4: 30% core particles and 70% outer disc particles are correctly tagged in aType', async () => {
+    const galaxy = new GalaxyScene();
     const renderer = createMockRenderer();
     const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 1000);
 
-    await gargantua.init(renderer, camera);
+    await galaxy.init(renderer, camera);
+
+    let pointsObj: THREE.Points | null = null;
+    galaxy.scene.traverse((obj: THREE.Object3D) => {
+      if (obj instanceof THREE.Points) pointsObj = obj;
+    });
+
+    const types = pointsObj!.geometry.getAttribute('aType').array;
+    const coreCount = Math.floor(200000 * 0.30); // 60,000
+    expect(types[0]).toBe(0.0);
+    expect(types[coreCount - 1]).toBe(0.0);
+    expect(types[coreCount]).toBe(1.0);
+    expect(types[199999]).toBe(1.0);
+  });
+
+  it('M2.2.5: Theme selection and Rainbow mode update material uniforms and color attributes', async () => {
+    const galaxy = new GalaxyScene();
+    const renderer = createMockRenderer();
+    const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 1000);
+
+    await galaxy.init(renderer, camera);
+
+    // Switch theme to nebula
+    galaxy.setTheme('nebula');
+    let pointsObj: THREE.Points | null = null;
+    galaxy.scene.traverse((obj: THREE.Object3D) => {
+      if (obj instanceof THREE.Points) pointsObj = obj;
+    });
+    const mat = pointsObj!.material as THREE.ShaderMaterial;
+    expect(mat.uniforms.uIsRainbow.value).toBe(0.0);
+
+    // Switch to rainbow
+    galaxy.setTheme('rainbow');
+    expect(mat.uniforms.uIsRainbow.value).toBe(1.0);
+
+    // Toggle rainbow
+    const isNow = galaxy.toggleRainbow();
+    expect(isNow).toBe(false);
+    expect(mat.uniforms.uIsRainbow.value).toBe(0.0);
+  });
+
+  it('M2.2.6: update() advances simulation time and updates openness and hand position uniforms', async () => {
+    const galaxy = new GalaxyScene();
+    const renderer = createMockRenderer();
+    const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 1000);
+
+    await galaxy.init(renderer, camera);
 
     const gesture = createNeutralGestureState();
     gesture.hasHand = true;
-    gesture.openness = 0.8;
+    gesture.openness = 0.85;
+    gesture.position = { x: 0.3, y: -0.2 };
 
-    gargantua.update(0.016, 0.5, gesture); // 50% slow motion
-    expect(gargantua.isInitialized).toBe(true);
+    galaxy.update(0.016, 0.5, gesture); // delta = 0.016, timeDilation = 0.5
+    expect(galaxy.isInitialized).toBe(true);
+
+    let pointsObj: THREE.Points | null = null;
+    galaxy.scene.traverse((obj: THREE.Object3D) => {
+      if (obj instanceof THREE.Points) pointsObj = obj;
+    });
+    const mat = pointsObj!.material as THREE.ShaderMaterial;
+    expect(mat.uniforms.uTime.value).toBeCloseTo(0.008, 5);
+    expect(mat.uniforms.uOpenness.value).toBe(0.85);
+    expect(mat.uniforms.uHandPos.value.x).toBe(0.3);
+    expect(mat.uniforms.uHandPos.value.y).toBe(-0.2);
+  });
+
+  it('M2.2.7: Vertex shader strictly keeps outer stars stationary (aTargetFist) while central core interpolates with uOpenness', async () => {
+    const galaxy = new GalaxyScene();
+    const renderer = createMockRenderer();
+    const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 1000);
+
+    await galaxy.init(renderer, camera);
+
+    let pointsObj: THREE.Points | null = null;
+    galaxy.scene.traverse((obj: THREE.Object3D) => {
+      if (obj instanceof THREE.Points) pointsObj = obj;
+    });
+    const mat = pointsObj!.material as THREE.ShaderMaterial;
+    const vert = mat.vertexShader;
+
+    // Verify outer particles (aType >= 0.5) are frozen at aTargetFist without uOpenness morphing
+    expect(vert).toContain('aType < 0.5');
+    expect(vert).toContain('currentPos = aTargetFist;');
+    expect(vert).toContain('mix(fistPos, openPos, morphFactor)');
+  });
+
+  it('M2.2.8: All theme palettes (emerald, nebula, supernova, cyber) update color buffer', async () => {
+    const galaxy = new GalaxyScene();
+    const renderer = createMockRenderer();
+    const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 1000);
+    await galaxy.init(renderer, camera);
+
+    let pointsObj: THREE.Points | null = null;
+    galaxy.scene.traverse((obj: THREE.Object3D) => {
+      if (obj instanceof THREE.Points) pointsObj = obj;
+    });
+    const colorAttr = pointsObj!.geometry.getAttribute('aColor');
+
+    // Test supernova
+    galaxy.setTheme('supernova');
+    expect(colorAttr.array[0]).toBeGreaterThan(0.5); // Warm / orange-red tone for core
+
+    // Test cyber
+    galaxy.setTheme('cyber');
+    expect(colorAttr.array[0]).toBeDefined();
+
+    // Test emerald
+    galaxy.setTheme('emerald');
+    expect(colorAttr.array[0]).toBeDefined();
+
+    galaxy.dispose();
+  });
+
+  it('M2.2.9: GalaxyScene update handles null or partial gesture states safely', async () => {
+    const galaxy = new GalaxyScene();
+    const renderer = createMockRenderer();
+    const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 1000);
+    await galaxy.init(renderer, camera);
+
+    // Call update with null / undefined gesture state
+    expect(() => galaxy.update(0.016, 1.0, null as any)).not.toThrow();
+    expect(() => galaxy.update(0.016, 1.0, {} as any)).not.toThrow();
+
+    galaxy.dispose();
+  });
+
+  it('M2.2.10: GalaxyScene handles method invocations prior to init() gracefully', () => {
+    const galaxy = new GalaxyScene();
+
+    expect(() => galaxy.setTheme('supernova')).not.toThrow();
+    expect(galaxy.toggleRainbow()).toBe(false);
+    expect(() => galaxy.resize(1920, 1080, 1.5)).not.toThrow();
+    expect(() => galaxy.update(0.016, 1.0, createNeutralGestureState())).not.toThrow();
+    expect(() => galaxy.dispose()).not.toThrow();
   });
 });
 
@@ -270,7 +353,7 @@ describe('Milestone 2 - Suite 3: Wormhole 4D Refraction Portal & Warp Streaks', 
     let hasPortalMesh = false;
     let hasPoints = false;
 
-    wormhole.scene.traverse((obj) => {
+    wormhole.scene.traverse((obj: THREE.Object3D) => {
       if (obj instanceof THREE.Mesh) hasPortalMesh = true;
       if (obj instanceof THREE.Points) hasPoints = true;
     });
@@ -296,75 +379,10 @@ describe('Milestone 2 - Suite 3: Wormhole 4D Refraction Portal & Warp Streaks', 
 });
 
 // ============================================================================
-// SUITE 4: TesseractScene 5D Bookshelf Lattice & Quantum Motes
+// SUITE 4: TransitionManager & Cinematic Interpolation
 // ============================================================================
-describe('Milestone 2 - Suite 4: Tesseract 5D Bookshelf Lattice & Quantum Filaments', () => {
-  it('M2.4.1: Tesseract initializes with periodic spacing L = 12.0 and >= 300,000 particles', async () => {
-    const tesseract = new TesseractScene({ gridSpacing: 12.0, particleCount: 300000 });
-    expect(tesseract.name).toBe('tesseract');
-    expect(tesseract.gridSpacing).toBe(12.0);
-
-    const renderer = createMockRenderer();
-    const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 1000);
-
-    await tesseract.init(renderer, camera);
-    expect(tesseract.particleCount).toBeGreaterThanOrEqual(300000);
-  });
-
-  it('M2.4.2: 5D hyper-cube coordinate projection maps (x, y, z, w, v) dimensions', () => {
-    const p5D = { x: 10.0, y: 20.0, z: 30.0, w: 4.0, v: -2.0 };
-    const projectedX = p5D.x + Math.sin(p5D.w * 0.2) * 2.5;
-    const projectedY = p5D.y + Math.cos(p5D.v * 0.2) * 2.5;
-    const projectedZ = p5D.z + Math.sin((p5D.w + p5D.v) * 0.15) * 2.0;
-
-    expect(Number.isFinite(projectedX)).toBe(true);
-    expect(Number.isFinite(projectedY)).toBe(true);
-    expect(Number.isFinite(projectedZ)).toBe(true);
-  });
-
-  it('M2.4.3: Scene graph contains lattice bounding volume, instanced bookshelf slats, and quantum motes', async () => {
-    const tesseract = new TesseractScene();
-    const renderer = createMockRenderer();
-    const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 1000);
-
-    await tesseract.init(renderer, camera);
-
-    let hasInstancedMesh = false;
-    let hasPoints = false;
-
-    tesseract.scene.traverse((obj) => {
-      if (obj instanceof THREE.InstancedMesh) hasInstancedMesh = true;
-      if (obj instanceof THREE.Points) hasPoints = true;
-    });
-
-    expect(hasInstancedMesh).toBe(true);
-    expect(hasPoints).toBe(true);
-  });
-
-  it('M2.4.4: Quantum motes attribute buffers contain 5D temporal coordinate channels', async () => {
-    const tesseract = new TesseractScene({ particleCount: 300000 });
-    const renderer = createMockRenderer();
-    const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 1000);
-
-    await tesseract.init(renderer, camera);
-
-    let pointsObj: THREE.Points | null = null;
-    tesseract.scene.traverse((obj) => {
-      if (obj instanceof THREE.Points) pointsObj = obj;
-    });
-
-    expect(pointsObj).not.toBeNull();
-    const geo = pointsObj!.geometry;
-    expect(geo.getAttribute('aCoord5D')).toBeDefined();
-    expect(geo.getAttribute('aCoord5D').itemSize).toBe(2); // (w, v)
-  });
-});
-
-// ============================================================================
-// SUITE 5: TransitionManager & Cinematic Interpolation
-// ============================================================================
-describe('Milestone 2 - Suite 5: TransitionManager, Smootherstep & Metric Ripple', () => {
-  it('M2.5.1: Quintic smootherstep satisfies zero velocity and acceleration boundary conditions', () => {
+describe('Milestone 2 - Suite 4: TransitionManager, Smootherstep & Metric Ripple', () => {
+  it('M2.4.1: Quintic smootherstep satisfies zero velocity and acceleration boundary conditions', () => {
     // S(0) = 0, S(1) = 1
     expect(smootherstep(0, 1, 0.0)).toBe(0.0);
     expect(smootherstep(0, 1, 1.0)).toBe(1.0);
@@ -383,34 +401,34 @@ describe('Milestone 2 - Suite 5: TransitionManager, Smootherstep & Metric Ripple
     }
   });
 
-  it('M2.5.2: Transition duration is strictly clamped to >= 0.5 seconds', () => {
+  it('M2.4.2: Transition duration is strictly clamped to >= 0.5 seconds', () => {
     const tm = new TransitionManager();
-    const gargantua = new GargantuaScene();
+    const galaxy = new GalaxyScene();
     const wormhole = new WormholeScene();
     const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 1000);
 
     // Request ultra-fast 0.1s transition -> should clamp to 0.5s
-    tm.startTransition(gargantua, wormhole, camera, { duration: 0.1 });
+    tm.startTransition(galaxy, wormhole, camera, { duration: 0.1 });
     expect(tm.getState().duration).toBeGreaterThanOrEqual(0.5);
     expect(tm.getState().duration).toBe(0.5);
   });
 
-  it('M2.5.3: Camera position and FOV interpolate smoothly between scene camera rigs', () => {
+  it('M2.4.3: Camera position and FOV interpolate smoothly between scene camera rigs', () => {
     const tm = new TransitionManager();
-    const gargantua = new GargantuaScene();
+    const galaxy = new GalaxyScene();
     const wormhole = new WormholeScene();
     const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 1000);
 
-    camera.position.set(0, 18, 95);
-    camera.fov = 55;
+    camera.position.set(0, 0, 100);
+    camera.fov = 60;
 
-    tm.startTransition(gargantua, wormhole, camera, { duration: 1.0, type: 'crossfade' });
+    tm.startTransition(galaxy, wormhole, camera, { duration: 1.0, type: 'crossfade' });
     expect(tm.isTransitioning()).toBe(true);
 
     // Advance halfway (0.5s)
     tm.update(0.5, camera);
     expect(tm.getProgress()).toBe(0.5);
-    expect(camera.position.z).toBeLessThan(95); // Approaching wormhole camera position (85)
+    expect(camera.position.z).toBeLessThan(100); // Approaching wormhole camera position (85)
 
     // Complete transition (another 0.5s)
     tm.update(0.5, camera);
@@ -420,13 +438,13 @@ describe('Milestone 2 - Suite 5: TransitionManager, Smootherstep & Metric Ripple
     expect(camera.fov).toBeCloseTo(60, 1);
   });
 
-  it('M2.5.4: Gravitational ripple parameters trigger and decay during transition', () => {
+  it('M2.4.4: Gravitational ripple parameters trigger and decay during transition', () => {
     const tm = new TransitionManager();
-    const gargantua = new GargantuaScene();
-    const tesseract = new TesseractScene();
+    const galaxy = new GalaxyScene();
+    const wormhole = new WormholeScene();
     const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 1000);
 
-    tm.startTransition(gargantua, tesseract, camera, { duration: 1.0, type: 'gravitational_warp' });
+    tm.startTransition(galaxy, wormhole, camera, { duration: 1.0, type: 'gravitational_warp' });
 
     // Mid transition ripple peak
     tm.update(0.5, camera);
@@ -438,9 +456,9 @@ describe('Milestone 2 - Suite 5: TransitionManager, Smootherstep & Metric Ripple
     expect(tm.isTransitioning()).toBe(false);
   });
 
-  it('M2.5.5: Lifecycle listeners onStart, onProgress, onComplete fire in order', () => {
+  it('M2.4.5: Lifecycle listeners onStart, onProgress, onComplete fire in order', () => {
     const tm = new TransitionManager();
-    const gargantua = new GargantuaScene();
+    const galaxy = new GalaxyScene();
     const wormhole = new WormholeScene();
     const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 1000);
 
@@ -451,83 +469,114 @@ describe('Milestone 2 - Suite 5: TransitionManager, Smootherstep & Metric Ripple
     });
     tm.onComplete((to) => events.push(`complete:${to}`));
 
-    tm.startTransition(gargantua, wormhole, camera, { duration: 1.0 });
+    tm.startTransition(galaxy, wormhole, camera, { duration: 1.0 });
     tm.update(0.5, camera);
     tm.update(0.5, camera);
 
-    expect(events).toContain('start:gargantua->wormhole');
+    expect(events).toContain('start:galaxy->wormhole');
     expect(events).toContain('progress:0.5');
     expect(events).toContain('complete:wormhole');
   });
 });
 
 // ============================================================================
-// SUITE 6: Full Multi-Scene Integration & Cycling
+// SUITE 5: Full 2-Scene Integration & Cycling
 // ============================================================================
-describe('Milestone 2 - Suite 6: Multi-Scene Manager Integration & Seamless Cycling', () => {
-  it('M2.6.1: SceneManager registers all 3 scenes and sets Gargantua as default', async () => {
+describe('Milestone 2 - Suite 5: 2-Scene Manager Integration & Seamless Cycling', () => {
+  it('M2.5.1: SceneManager registers both scenes and sets Galaxy as default', async () => {
     const sm = new SceneManager();
     const renderer = createMockRenderer();
     const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 1000);
 
-    const gargantua = new GargantuaScene();
+    const galaxy = new GalaxyScene();
     const wormhole = new WormholeScene();
-    const tesseract = new TesseractScene();
 
-    await sm.registerScene(gargantua, renderer, camera);
+    await sm.registerScene(galaxy, renderer, camera);
     await sm.registerScene(wormhole, renderer, camera);
-    await sm.registerScene(tesseract, renderer, camera);
 
-    expect(sm.getActiveSceneName()).toBe('gargantua');
+    expect(sm.getActiveSceneName()).toBe('galaxy');
     expect(sm.getParticleCount()).toBe(200000);
   });
 
-  it('M2.6.2: Circular nextScene navigates Gargantua -> Wormhole -> Tesseract -> Gargantua', async () => {
+  it('M2.5.2: Circular nextScene navigates Galaxy -> Wormhole -> Galaxy', async () => {
     const sm = new SceneManager();
     const renderer = createMockRenderer();
     const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 1000);
 
-    await sm.registerScene(new GargantuaScene(), renderer, camera);
+    await sm.registerScene(new GalaxyScene(), renderer, camera);
     await sm.registerScene(new WormholeScene(), renderer, camera);
-    await sm.registerScene(new TesseractScene(), renderer, camera);
 
     const gesture = createNeutralGestureState();
 
-    // 1. Gargantua -> Wormhole
+    // 1. Galaxy -> Wormhole
     sm.nextScene({ duration: 0.5 });
     sm.update(0.5, 0.5, 1.0, gesture);
     expect(sm.getActiveSceneName()).toBe('wormhole');
 
-    // 2. Wormhole -> Tesseract
+    // 2. Wormhole -> Galaxy
     sm.nextScene({ duration: 0.5 });
     sm.update(0.5, 0.5, 1.0, gesture);
-    expect(sm.getActiveSceneName()).toBe('tesseract');
-
-    // 3. Tesseract -> Gargantua
-    sm.nextScene({ duration: 0.5 });
-    sm.update(0.5, 0.5, 1.0, gesture);
-    expect(sm.getActiveSceneName()).toBe('gargantua');
+    expect(sm.getActiveSceneName()).toBe('galaxy');
   });
 
-  it('M2.6.3: Disposal cleanly disposes all registered scenes and transitions', async () => {
+  it('M2.5.3: Disposal cleanly disposes all registered scenes and transitions', async () => {
     const sm = new SceneManager();
     const renderer = createMockRenderer();
     const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 1000);
 
-    const gargantua = new GargantuaScene();
+    const galaxy = new GalaxyScene();
     const wormhole = new WormholeScene();
-    const tesseract = new TesseractScene();
 
-    await sm.registerScene(gargantua, renderer, camera);
+    await sm.registerScene(galaxy, renderer, camera);
     await sm.registerScene(wormhole, renderer, camera);
-    await sm.registerScene(tesseract, renderer, camera);
 
     sm.dispose();
     expect(sm.getActiveScene()).toBeNull();
     expect(sm.getActiveSceneName()).toBe('Unknown');
     expect(sm.getParticleCount()).toBe(0);
-    expect(gargantua.isInitialized).toBe(false);
+    expect(galaxy.isInitialized).toBe(false);
     expect(wormhole.isInitialized).toBe(false);
-    expect(tesseract.isInitialized).toBe(false);
+  });
+
+  it('M2.5.4: Transition listener onStart receives correct destination scene', async () => {
+    const sm = new SceneManager();
+    const renderer = createMockRenderer();
+    const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 1000);
+
+    await sm.registerScene(new GalaxyScene(), renderer, camera);
+    await sm.registerScene(new WormholeScene(), renderer, camera);
+
+    let startedTo: string = '';
+    sm.onTransitionStart((from, to) => {
+      startedTo = to;
+    });
+
+    sm.nextScene({ duration: 1.0 });
+    expect(startedTo).toBe('wormhole');
+
+    sm.dispose();
+  });
+
+  it('M2.5.5: Circular previousScene navigates Galaxy -> Wormhole -> Galaxy', async () => {
+    const sm = new SceneManager();
+    const renderer = createMockRenderer();
+    const camera = new THREE.PerspectiveCamera(60, 16 / 9, 0.1, 1000);
+
+    await sm.registerScene(new GalaxyScene(), renderer, camera);
+    await sm.registerScene(new WormholeScene(), renderer, camera);
+
+    const gesture = createNeutralGestureState();
+
+    // 1. Galaxy -> Wormhole (previous wraps to last)
+    sm.previousScene({ duration: 0.5 });
+    sm.update(0.5, 0.5, 1.0, gesture);
+    expect(sm.getActiveSceneName()).toBe('wormhole');
+
+    // 2. Wormhole -> Galaxy (previous returns to first)
+    sm.previousScene({ duration: 0.5 });
+    sm.update(0.5, 0.5, 1.0, gesture);
+    expect(sm.getActiveSceneName()).toBe('galaxy');
+
+    sm.dispose();
   });
 });

@@ -3,9 +3,8 @@
   --panel-bg: rgba(8, 12, 24, 0.82);
   --panel-border: rgba(138, 79, 255, 0.32);
   --panel-border-glow: rgba(0, 255, 179, 0.35);
-  --accent-gargantua: #ff9d00;
+  --accent-galaxy: #00ffb3;
   --accent-wormhole: #00f0ff;
-  --accent-tesseract: #00ffb3;
   --accent-cyan: #00f0ff;
   --accent-mint: #00ffb3;
   --accent-purple: #8a4fff;
@@ -731,11 +730,11 @@ html, body {
   box-shadow: var(--glow-emerald);
 }
 
-.scene-btn[data-scene="gargantua"].active {
-  background: linear-gradient(135deg, #ff9d00, #ff6a00);
+.scene-btn[data-scene="galaxy"].active {
+  background: linear-gradient(135deg, #00ffb3, #10b981);
   color: #030307;
-  border-color: #ffaa00;
-  box-shadow: var(--glow-gold);
+  border-color: #00ffb3;
+  box-shadow: var(--glow-emerald);
 }
 
 .scene-btn[data-scene="wormhole"].active {
@@ -743,13 +742,6 @@ html, body {
   color: #ffffff;
   border-color: #00f0ff;
   box-shadow: 0 0 20px rgba(0, 240, 255, 0.6);
-}
-
-.scene-btn[data-scene="tesseract"].active {
-  background: linear-gradient(135deg, #00ffb3, #10b981);
-  color: #030307;
-  border-color: #00ffb3;
-  box-shadow: var(--glow-emerald);
 }
 
 .shortcut-hints {

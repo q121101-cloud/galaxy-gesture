@@ -70,6 +70,13 @@ export class Engine {
 
     // 4. Setup Resizing
     this.setupResizeObserver();
+
+    // 5. Synchronize scene transitions with AudioEngine
+    this.sceneManager.onTransitionStart((_from, to) => {
+      if (this.audioEngine) {
+        this.audioEngine.setScene(to, 1.0);
+      }
+    });
   }
 
   private setupResizeObserver(): void {
@@ -118,11 +125,7 @@ export class Engine {
    * Switch active scene
    */
   public switchScene(sceneName: string, config?: Partial<TransitionConfig>): boolean {
-    const transitioned = this.sceneManager.switchTo(sceneName, config);
-    if (transitioned && this.audioEngine) {
-      this.audioEngine.setScene(sceneName, config?.duration ?? 1.5);
-    }
-    return transitioned;
+    return this.sceneManager.switchTo(sceneName, config);
   }
 
   /**
@@ -142,14 +145,8 @@ export class Engine {
     // If swipe was triggered, automatically trigger scene switch
     if (state.swipeTriggered === 'right') {
       this.sceneManager.nextScene({ duration: 1.0, type: 'crossfade' });
-      if (this.audioEngine) {
-        this.audioEngine.setScene(this.sceneManager.getActiveSceneName(), 1.0);
-      }
     } else if (state.swipeTriggered === 'left') {
       this.sceneManager.previousScene({ duration: 1.0, type: 'crossfade' });
-      if (this.audioEngine) {
-        this.audioEngine.setScene(this.sceneManager.getActiveSceneName(), 1.0);
-      }
     }
   }
 

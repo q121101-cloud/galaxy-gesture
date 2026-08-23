@@ -15,7 +15,7 @@ export interface GlassmorphicHUDCallbacks {
 /**
  * GlassmorphicHUD
  * High-performance HUD overlay manager providing real-time telemetry readouts,
- * live rolling FPS counter, particle counter (>300,000 GPU particles),
+ * live rolling FPS counter, particle counter (200,000 GPU particles),
  * relativistic time dilation progress gauge, finger extension matrix,
  * and cinematic control toggles.
  */
@@ -101,13 +101,11 @@ export class GlassmorphicHUD {
     this.btnStartCam = document.getElementById('btn-start-camera');
     this.btnStartKeyboard = document.getElementById('btn-start-keyboard');
 
-    const gargantuaBtn = document.getElementById('btn-scene-gargantua');
+    const galaxyBtn = document.getElementById('btn-scene-galaxy');
     const wormholeBtn = document.getElementById('btn-scene-wormhole');
-    const tesseractBtn = document.getElementById('btn-scene-tesseract');
 
-    if (gargantuaBtn) this.sceneButtons.set('gargantua', gargantuaBtn);
+    if (galaxyBtn) this.sceneButtons.set('galaxy', galaxyBtn);
     if (wormholeBtn) this.sceneButtons.set('wormhole', wormholeBtn);
-    if (tesseractBtn) this.sceneButtons.set('tesseract', tesseractBtn);
   }
 
   private initEventListeners(): void {
@@ -181,7 +179,7 @@ export class GlassmorphicHUD {
       }
     }
 
-    // 2. Particle Count (>300,000 GPU Particles)
+    // 2. Particle Count (200,000 GPU Particles)
     if (this.valParticles) {
       const formattedCount = telemetry.particleCount.toLocaleString();
       if (this.valParticles.textContent !== formattedCount) {

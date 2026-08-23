@@ -96,24 +96,22 @@ export class GestureHints {
 
     let tipText = '<b>Clench / Open</b>: Zoom / Singularity';
     switch (sceneName.toLowerCase()) {
-      case 'gargantua':
-        tipText = '<b>Clench / Open</b>: Accretion Singularity';
+      case 'galaxy':
+        tipText = '<b>Clench / Open</b>: Core Expansion';
         break;
       case 'wormhole':
         tipText = '<b>Clench / Open</b>: Throat Warp Speed';
         break;
-      case 'tesseract':
-        tipText = '<b>Clench / Open</b>: 5D Lattice Projection';
-        break;
     }
 
+    const plainText = tipText.replace(/<[^>]*>/g, '');
     const textSpan = openFistCard.querySelector?.('.hint-text');
-    if (textSpan) {
+    if (textSpan && textSpan !== openFistCard && textSpan.parentElement === openFistCard) {
       textSpan.innerHTML = tipText;
-      textSpan.textContent = tipText.replace(/<[^>]*>/g, '');
+    } else {
+      openFistCard.innerHTML = `<span class="hint-icon">✊ / 🖐️</span><span class="hint-text">${tipText}</span>`;
+      openFistCard.textContent = `✊ / 🖐️ ${plainText}`;
     }
-    openFistCard.innerHTML = `<span class="hint-icon">✊ / 🖐️</span><span class="hint-text">${tipText}</span>`;
-    openFistCard.textContent = tipText.replace(/<[^>]*>/g, '');
   }
 
   /**

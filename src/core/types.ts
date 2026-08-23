@@ -57,7 +57,7 @@ export interface GestureState {
  * High-performance scene interface
  */
 export interface IScene {
-  /** Unique scene identifier (e.g. 'gargantua', 'wormhole', 'tesseract') */
+  /** Unique scene identifier (e.g. 'galaxy', 'wormhole') */
   readonly name: string;
   /** Number of active GPU particles rendered in this scene (e.g. >= 300,000) */
   readonly particleCount: number;

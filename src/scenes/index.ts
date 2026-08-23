@@ -1,5 +1,4 @@
 export * from './BaseScene';
-export * from './GargantuaScene';
+export * from './GalaxyScene';
 export * from './WormholeScene';
-export * from './TesseractScene';
 export * from './TransitionManager';

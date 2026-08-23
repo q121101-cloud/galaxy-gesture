@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach, MockDOMElement } from './e2e_harness';
 import { Engine } from '../src/core/Engine';
-import { GargantuaScene } from '../src/scenes/GargantuaScene';
+import { GalaxyScene } from '../src/scenes/GalaxyScene';
 import { WormholeScene } from '../src/scenes/WormholeScene';
-import { TesseractScene } from '../src/scenes/TesseractScene';
 import { AudioEngine } from '../src/audio/AudioEngine';
 import { LandmarkNormalizer } from '../src/gestures/LandmarkNormalizer';
 import { GestureRecognizer } from '../src/gestures/GestureRecognizer';
@@ -19,9 +18,8 @@ describe('Milestone 6 - Suite 1: High-Velocity Gesture & Rapid Transition Stress
   beforeEach(async () => {
     const canvas = new MockDOMElement('canvas') as any;
     engine = new Engine({ canvas });
-    await engine.registerScene(new GargantuaScene());
+    await engine.registerScene(new GalaxyScene());
     await engine.registerScene(new WormholeScene());
-    await engine.registerScene(new TesseractScene());
 
     recognizer = new GestureRecognizer();
     normalizer = new LandmarkNormalizer();
@@ -29,14 +27,14 @@ describe('Milestone 6 - Suite 1: High-Velocity Gesture & Rapid Transition Stress
   });
 
   it('M6.1.1: 50 consecutive rapid scene transitions maintain numerical stability with zero NaNs', () => {
-    const scenes = ['gargantua', 'wormhole', 'tesseract'];
+    const scenes = ['galaxy', 'wormhole'];
     for (let i = 0; i < 50; i++) {
-      const nextScene = scenes[i % 3];
+      const nextScene = scenes[i % 2];
       engine.switchScene(nextScene, { duration: 0.5, type: 'crossfade' });
       engine.renderFrame(i * 16.6);
 
       const activeName = engine.sceneManager.getActiveSceneName();
-      expect(['gargantua', 'wormhole', 'tesseract']).toContain(activeName);
+      expect(['galaxy', 'wormhole']).toContain(activeName);
     }
   });
 
@@ -119,9 +117,9 @@ describe('Milestone 6 - Suite 2: Procedural Audio Engine DSP Hardening', () => {
   });
 
   it('M6.2.2: Equal-power gain invariant holds during 50 back-to-back audio scene crossfades', () => {
-    const scenes = ['gargantua', 'wormhole', 'tesseract'];
+    const scenes = ['galaxy', 'wormhole'];
     for (let i = 0; i < 50; i++) {
-      const target = scenes[i % 3];
+      const target = scenes[i % 2];
       expect(() => {
         audioEngine.setScene(target, 0.5);
       }).not.toThrow();
@@ -208,24 +206,25 @@ describe('Milestone 6 - Suite 4: Mathematical Invariants & Forensic Integrity', 
   });
 });
 
-describe('Milestone 6 - Suite 5: Gargantua Particle Count & Cinematic Pacing Verification', () => {
-  it('M6.5.1: Gargantua initializes exactly 200,000 particles with 9 allocated attribute buffers', async () => {
-    const gargantua = new GargantuaScene();
+describe('Milestone 6 - Suite 5: Galaxy Particle Count & Pacing Verification', () => {
+  it('M6.5.1: Galaxy initializes exactly 200,000 particles with 11 allocated attribute buffers', async () => {
+    const galaxy = new GalaxyScene();
     const canvas = new MockDOMElement('canvas') as any;
     const engine = new Engine({ canvas });
-    await engine.registerScene(gargantua);
+    await engine.registerScene(galaxy);
 
-    expect(gargantua.particleCount).toBe(200000);
+    expect(galaxy.particleCount).toBe(200000);
     expect(engine.sceneManager.getParticleCount()).toBe(200000);
 
     let pointsObj: any = null;
-    gargantua.scene.traverse((obj) => {
-      if ((obj as any).isPoints) pointsObj = obj;
+    galaxy.scene.traverse((obj: any) => {
+      if (obj.isPoints) pointsObj = obj;
     });
     expect(pointsObj).not.toBeNull();
     const geo = pointsObj.geometry;
     expect(geo.getAttribute('position').count).toBe(200000);
-    expect(geo.getAttribute('aVelocity').count).toBe(200000);
+    expect(geo.getAttribute('aTargetFist').count).toBe(200000);
+    expect(geo.getAttribute('aTargetOpen').count).toBe(200000);
     expect(geo.getAttribute('aColor').count).toBe(200000);
     expect(geo.getAttribute('aSize').count).toBe(200000);
     expect(geo.getAttribute('aOrbitRadius').count).toBe(200000);
@@ -233,19 +232,17 @@ describe('Milestone 6 - Suite 5: Gargantua Particle Count & Cinematic Pacing Ver
     expect(geo.getAttribute('aOrbitAngle').count).toBe(200000);
     expect(geo.getAttribute('aType').count).toBe(200000);
     expect(geo.getAttribute('aPhase').count).toBe(200000);
+    expect(geo.getAttribute('aWarpVelocity').count).toBe(200000);
 
     engine.dispose();
   });
 
-  it('M6.5.2: Wormhole and Tesseract scenes remain untouched at 300,000 default particles', async () => {
+  it('M6.5.2: Wormhole scene remains at 300,000 default particles', async () => {
     const wormhole = new WormholeScene();
-    const tesseract = new TesseractScene();
-
     expect(wormhole.particleCount).toBe(300000);
-    expect(tesseract.particleCount).toBe(300000);
   });
 
-  it('M6.5.3: CameraController applies cinematic 40-42% speed reduction for gesture yaw and pitch', () => {
+  it('M6.5.3: CameraController applies cinematic speed mapping for gesture yaw and pitch', () => {
     const canvas = new MockDOMElement('canvas') as any;
     const engine = new Engine({ canvas });
     const camController = engine.cameraController;
@@ -265,64 +262,34 @@ describe('Milestone 6 - Suite 5: Gargantua Particle Count & Cinematic Pacing Ver
 
     camController.update(0.016, gesture);
 
-    // Target yaw should be mapped with 0.7 factor (0.5 * 0.7 = 0.35)
-    // Target pitch should be mapped with 0.6 factor (0.4 * 0.6 = 0.24)
-    // Both reflect ~40-42% reduction compared to original 1.2 and 1.0 multipliers
     expect((camController as any).targetYaw).toBeCloseTo(0.35, 4);
     expect((camController as any).targetPitch).toBeCloseTo(0.24, 4);
 
     engine.dispose();
   });
 
-  it('M6.5.4: Photon ring rotation advances at slowed rate of 0.066 rad/s', async () => {
-    const gargantua = new GargantuaScene();
-    const canvas = new MockDOMElement('canvas') as any;
-    const engine = new Engine({ canvas });
-    await engine.registerScene(gargantua);
-
-    const initialRotZ = (gargantua as any).photonRingMesh?.rotation?.z ?? 0;
-    const gesture = {
-      hasHand: false,
-      openness: 0,
-      pinchDistance: 1,
-      timeDilation: 1,
-      rotation: { yaw: 0, pitch: 0, roll: 0 },
-      position: { x: 0, y: 0 },
-      zoomDelta: 0,
-      swipeTriggered: null,
-      intensity: 0,
-      rawLandmarks: null,
-    };
-
-    gargantua.update(1.0, 1.0, gesture as any); // 1 second delta
-    const afterRotZ = (gargantua as any).photonRingMesh?.rotation?.z ?? 0;
-
-    expect(afterRotZ - initialRotZ).toBeCloseTo(0.066, 4);
-
-    engine.dispose();
-  });
-
-  it('M6.5.5: Gargantua respects explicit particleCount option but defaults to exactly 200,000', async () => {
-    const defaultScene = new GargantuaScene();
+  it('M6.5.4: Galaxy respects explicit particleCount option but defaults to exactly 200,000', async () => {
+    const defaultScene = new GalaxyScene();
     expect(defaultScene.particleCount).toBe(200000);
 
-    const customScene = new GargantuaScene({ particleCount: 150000 });
+    const customScene = new GalaxyScene({ particleCount: 150000 });
     expect(customScene.particleCount).toBe(150000);
   });
 
-  it('M6.5.6: Particle attribute buffer Float32Array lengths exactly match 200,000 * component count', async () => {
-    const gargantua = new GargantuaScene();
+  it('M6.5.5: Particle attribute buffer Float32Array lengths exactly match 200,000 * component count', async () => {
+    const galaxy = new GalaxyScene();
     const canvas = new MockDOMElement('canvas') as any;
     const engine = new Engine({ canvas });
-    await engine.registerScene(gargantua);
+    await engine.registerScene(galaxy);
 
     let pointsObj: any = null;
-    gargantua.scene.traverse((obj) => {
-      if ((obj as any).isPoints) pointsObj = obj;
+    galaxy.scene.traverse((obj: any) => {
+      if (obj.isPoints) pointsObj = obj;
     });
     const geo = pointsObj.geometry;
     expect(geo.getAttribute('position').array.length).toBe(200000 * 3);
-    expect(geo.getAttribute('aVelocity').array.length).toBe(200000 * 3);
+    expect(geo.getAttribute('aTargetFist').array.length).toBe(200000 * 3);
+    expect(geo.getAttribute('aTargetOpen').array.length).toBe(200000 * 3);
     expect(geo.getAttribute('aColor').array.length).toBe(200000 * 3);
     expect(geo.getAttribute('aSize').array.length).toBe(200000);
     expect(geo.getAttribute('aOrbitRadius').array.length).toBe(200000);
@@ -330,15 +297,16 @@ describe('Milestone 6 - Suite 5: Gargantua Particle Count & Cinematic Pacing Ver
     expect(geo.getAttribute('aOrbitAngle').array.length).toBe(200000);
     expect(geo.getAttribute('aType').array.length).toBe(200000);
     expect(geo.getAttribute('aPhase').array.length).toBe(200000);
+    expect(geo.getAttribute('aWarpVelocity').array.length).toBe(200000 * 3);
 
     engine.dispose();
   });
 
-  it('M6.5.7: Accretion and particle uniforms scale strictly linearly with relativistic time-dilation', async () => {
-    const gargantua = new GargantuaScene();
+  it('M6.5.6: Galaxy particle uniforms scale strictly linearly with relativistic time-dilation', async () => {
+    const galaxy = new GalaxyScene();
     const canvas = new MockDOMElement('canvas') as any;
     const engine = new Engine({ canvas });
-    await engine.registerScene(gargantua);
+    await engine.registerScene(galaxy);
 
     const gesture = {
       hasHand: true,
@@ -353,20 +321,12 @@ describe('Milestone 6 - Suite 5: Gargantua Particle Count & Cinematic Pacing Ver
       rawLandmarks: null,
     };
 
-    gargantua.update(1.0, 0.2, gesture as any); // delta = 1.0, timeDilation = 0.2 -> effectiveDelta = 0.2
+    galaxy.update(1.0, 0.2, gesture as any); // delta = 1.0, timeDilation = 0.2 -> effectiveDelta = 0.2
 
-    const partMat = (gargantua as any).particleMaterial;
+    const partMat = (galaxy as any).particleMaterial;
     expect(partMat.uniforms.uTime.value).toBeCloseTo(0.2, 5);
-    expect(partMat.uniforms.uTimeDilation.value).toBe(0.2);
     expect(partMat.uniforms.uOpenness.value).toBe(0.8);
-
-    const accMat = (gargantua as any).accretionMaterial;
-    expect(accMat.uniforms.uTime.value).toBeCloseTo(0.2, 5);
-    expect(accMat.uniforms.uTimeDilation.value).toBe(0.2);
-    expect(accMat.uniforms.uDopplerStrength.value).toBeCloseTo(1.4, 5);
 
     engine.dispose();
   });
 });
-
-

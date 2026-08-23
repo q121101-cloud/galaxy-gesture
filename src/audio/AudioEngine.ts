@@ -1,21 +1,15 @@
 /**
  * Web Audio Engine — Master Soundscape Graph & Scene Crossfader
  *
- * Plays "No Time for Caution" (Hans Zimmer / Interstellar OST) as real MP3 for
- * the Gargantua scene. Wormhole & Tesseract use procedural Web Audio synths.
- * Manages spatial cathedral convolution reverb, equal-power 1.5s crossfading,
+ * Provides procedural Web Audio synthesis for Galaxy & Wormhole scenes.
+ * Manages spatial cathedral convolution reverb, equal-power crossfading,
  * dynamic gesture modulation coupler, and MediaStream destination for recording.
  */
 
 import { GestureState, IAudioEngine } from '../core/types';
 import { generateReverbImpulse } from './ReverbGenerator';
-import { GargantuaOrganSynth } from './GargantuaOrganSynth';
 import { WormholePadSynth } from './WormholePadSynth';
-import { TesseractClockworkSynth } from './TesseractClockworkSynth';
 import { GestureAudioCoupler } from './GestureAudioCoupler';
-
-// Real Hans Zimmer track served from /public/audio/
-const NO_TIME_FOR_CAUTION_SRC = '/audio/no-time-for-caution.mp3';
 
 export class AudioEngine implements IAudioEngine {
   private context: AudioContext | BaseAudioContext | null = null;
@@ -24,25 +18,17 @@ export class AudioEngine implements IAudioEngine {
   private isMuted: boolean = false;
 
   // Active scene tracking
-  private activeSceneName: string = 'gargantua';
+  private activeSceneName: string = 'galaxy';
   private crossfadeTimer: any = null;
   private crossfadeAnimFrame: any = null;
 
-  // Synths (procedural — Wormhole & Tesseract)
-  private organSynth: GargantuaOrganSynth | null = null;
+  // Synths (procedural)
   private padSynth: WormholePadSynth | null = null;
-  private clockSynth: TesseractClockworkSynth | null = null;
   private coupler: GestureAudioCoupler | null = null;
 
-  // Real MP3 track — "No Time for Caution" by Hans Zimmer
-  private realTrackEl: HTMLAudioElement | null = null;
-  private realTrackSource: MediaElementAudioSourceNode | null = null;
-  private realTrackGain: GainNode | null = null;
-
   // Scene Stem Gains
-  private gargantuaStemGain: GainNode | null = null;
+  private galaxyStemGain: GainNode | null = null;
   private wormholeStemGain: GainNode | null = null;
-  private tesseractStemGain: GainNode | null = null;
 
   // Master Processing Nodes
   private masterFilter: BiquadFilterNode | null = null;
@@ -151,80 +137,27 @@ export class AudioEngine implements IAudioEngine {
     }
 
     // 4. Create Scene Stem Gains
-    this.gargantuaStemGain = ctx.createGain();
-    this.gargantuaStemGain.gain.setValueAtTime(1.0, ctx.currentTime); // active initially
+    this.galaxyStemGain = ctx.createGain();
+    this.galaxyStemGain.gain.setValueAtTime(1.0, ctx.currentTime); // active initially
 
     this.wormholeStemGain = ctx.createGain();
     this.wormholeStemGain.gain.setValueAtTime(0.0, ctx.currentTime);
 
-    this.tesseractStemGain = ctx.createGain();
-    this.tesseractStemGain.gain.setValueAtTime(0.0, ctx.currentTime);
-
-    this.gargantuaStemGain.connect(this.masterFilter);
+    this.galaxyStemGain.connect(this.masterFilter);
     this.wormholeStemGain.connect(this.masterFilter);
-    this.tesseractStemGain.connect(this.masterFilter);
 
-    // 5. Instantiate Procedural Synths (Wormhole & Tesseract only)
+    // 5. Instantiate Procedural Synth
     this.padSynth = new WormholePadSynth(ctx);
+    this.padSynth.connect(this.galaxyStemGain);
     this.padSynth.connect(this.wormholeStemGain);
-
-    this.clockSynth = new TesseractClockworkSynth(ctx);
-    this.clockSynth.connect(this.tesseractStemGain);
 
     this.coupler = new GestureAudioCoupler(ctx);
 
-    // 5b. Setup real MP3 track — "No Time for Caution" by Hans Zimmer
-    //     Route through Web Audio graph: audio el → MediaElementSource → gainNode → gargantuaStemGain → masterFilter
-    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-      try {
-        this.realTrackEl = new Audio();
-        this.realTrackEl.src = NO_TIME_FOR_CAUTION_SRC;
-        this.realTrackEl.loop = true;
-        this.realTrackEl.crossOrigin = 'anonymous';
-        this.realTrackEl.preload = 'auto';
-
-        const anyCtx = ctx as any;
-        if (typeof anyCtx.createMediaElementSource === 'function') {
-          this.realTrackSource = anyCtx.createMediaElementSource(this.realTrackEl);
-          this.realTrackGain = ctx.createGain();
-          this.realTrackGain.gain.setValueAtTime(1.0, ctx.currentTime);
-          if (this.realTrackSource) {
-            (this.realTrackSource as AudioNode).connect(this.realTrackGain);
-          }
-          this.realTrackGain.connect(this.gargantuaStemGain!);
-          console.log('[AudioEngine] Real track "No Time for Caution" connected to audio graph.');
-        }
-      } catch (e) {
-        console.warn('[AudioEngine] Failed to setup real MP3 track:', e);
-        this.realTrackEl = null;
-      }
-    }
-
-    // 6. Start default scene — Gargantua: play real track on first user interaction
-    const startRealTrack = async () => {
-      if (this.realTrackEl && this.realTrackEl.paused) {
-        if (this.context && this.context.state === 'suspended') {
-          await (this.context as AudioContext).resume().catch(() => {});
-        }
-        this.realTrackEl.play().catch((e) => {
-          console.warn('[AudioEngine] Real track autoplay blocked, will retry on interaction:', e);
-        });
-      }
-    };
-
-    // Try immediate play (may be blocked by browser)
-    startRealTrack();
-
-    // Also hook into interaction events as fallback
-    if (typeof window !== 'undefined') {
-      const playOnInteraction = () => { startRealTrack(); };
-      ['pointerdown', 'click', 'keydown', 'touchstart'].forEach(evt => {
-        window.addEventListener(evt, playOnInteraction, { once: true, passive: true });
-      });
-    }
+    // 6. Start default scene — Galaxy ambient sound
+    this.padSynth.start(ctx.currentTime);
 
     this.isInitialized = true;
-    console.log('[AudioEngine] Web Audio Engine with real Hans Zimmer track initialized.');
+    console.log('[AudioEngine] Procedural Web Audio Engine initialized.');
   }
 
   /**
@@ -263,29 +196,23 @@ export class AudioEngine implements IAudioEngine {
   }
 
   /**
-   * Normalizes scene name string to canonical key ('gargantua' | 'wormhole' | 'tesseract')
+   * Normalizes scene name string to canonical key ('galaxy' | 'wormhole')
    */
-  private normalizeSceneName(name: string): 'gargantua' | 'wormhole' | 'tesseract' {
+  private normalizeSceneName(name: string): 'galaxy' | 'wormhole' {
     const lower = name.toLowerCase();
     if (lower.includes('wormhole') || lower.includes('portal')) return 'wormhole';
-    if (lower.includes('tesseract') || lower.includes('5d')) return 'tesseract';
-    return 'gargantua';
+    return 'galaxy';
   }
 
-  private getStemGain(sceneKey: 'gargantua' | 'wormhole' | 'tesseract'): GainNode | null {
+  private getStemGain(sceneKey: 'galaxy' | 'wormhole'): GainNode | null {
     switch (sceneKey) {
-      case 'gargantua': return this.gargantuaStemGain;
+      case 'galaxy': return this.galaxyStemGain;
       case 'wormhole': return this.wormholeStemGain;
-      case 'tesseract': return this.tesseractStemGain;
     }
   }
 
-  private getSynth(sceneKey: 'gargantua' | 'wormhole' | 'tesseract') {
-    switch (sceneKey) {
-      case 'gargantua': return this.organSynth;
-      case 'wormhole': return this.padSynth;
-      case 'tesseract': return this.clockSynth;
-    }
+  private getSynth(sceneKey: 'galaxy' | 'wormhole') {
+    return this.padSynth;
   }
 
   /**
@@ -315,18 +242,9 @@ export class AudioEngine implements IAudioEngine {
       this.crossfadeAnimFrame = null;
     }
 
-    // Start target synth if not yet running (procedural synths only)
+    // Start target synth if not yet running
     if (toSynth) {
       toSynth.start(this.context.currentTime);
-    }
-
-    // Handle real MP3 track: play when entering Gargantua, pause when leaving
-    if (targetKey === 'gargantua' && this.realTrackEl && this.realTrackEl.paused) {
-      this.realTrackEl.play().catch(() => {});
-    }
-    if (sourceKey === 'gargantua' && targetKey !== 'gargantua' && this.realTrackEl) {
-      // Pause the track after the crossfade (stem gain will handle the volume fade)
-      setTimeout(() => { this.realTrackEl?.pause(); }, transitionDuration * 1000 + 100);
     }
 
     const duration = Math.max(0.05, transitionDuration);
@@ -371,16 +289,11 @@ export class AudioEngine implements IAudioEngine {
           this.crossfadeTimer = setTimeout(stepCrossfade, 16);
         }
       } else {
-        // Crossfade complete: stop old procedural synth to save CPU
         if (fromGain) {
           try { fromGain.gain.setValueAtTime(0.0, this.context.currentTime); } catch {}
         }
         if (toGain) {
           try { toGain.gain.setValueAtTime(1.0, this.context.currentTime); } catch {}
-        }
-        const oldSynth = this.getSynth(sourceKey);
-        if (oldSynth && sourceKey !== targetKey) {
-          oldSynth.stop(this.context.currentTime + 0.1);
         }
       }
     };
@@ -399,9 +312,8 @@ export class AudioEngine implements IAudioEngine {
       gestureState,
       this.activeSceneName,
       {
-        gargantua: undefined, // real track, not procedural — no synth modulation
+        galaxy: this.padSynth ?? undefined,
         wormhole: this.padSynth ?? undefined,
-        tesseract: this.clockSynth ?? undefined,
       },
       {
         masterFilter: this.masterFilter,
@@ -475,21 +387,7 @@ export class AudioEngine implements IAudioEngine {
       this.crossfadeAnimFrame = null;
     }
 
-    // Stop and clean up the real MP3 track
-    if (this.realTrackEl) {
-      try {
-        this.realTrackEl.pause();
-        this.realTrackEl.src = '';
-      } catch {}
-      this.realTrackEl = null;
-    }
-    try { this.realTrackSource?.disconnect(); } catch {}
-    try { this.realTrackGain?.disconnect(); } catch {}
-    this.realTrackSource = null;
-    this.realTrackGain = null;
-
     this.padSynth?.dispose();
-    this.clockSynth?.dispose();
 
     try {
       this.masterGain?.disconnect();
@@ -499,9 +397,8 @@ export class AudioEngine implements IAudioEngine {
       this.convolver?.disconnect();
       this.reverbWetGain?.disconnect();
       this.reverbDryGain?.disconnect();
-      this.gargantuaStemGain?.disconnect();
+      this.galaxyStemGain?.disconnect();
       this.wormholeStemGain?.disconnect();
-      this.tesseractStemGain?.disconnect();
     } catch {}
 
     if (this.context && (this.context as any).close && this.context.state !== 'closed') {
@@ -511,7 +408,6 @@ export class AudioEngine implements IAudioEngine {
     }
 
     this.padSynth = null;
-    this.clockSynth = null;
     this.coupler = null;
     this.context = null;
     this.isInitialized = false;
