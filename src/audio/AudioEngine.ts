@@ -1,10 +1,10 @@
 /**
- * Procedural Web Audio Engine — Master Soundscape Graph & Scene Crossfader
+ * Web Audio Engine — Master Soundscape Graph & Scene Crossfader
  *
- * 100% synthesized Web Audio API sound architecture (zero external sample assets).
- * Manages spatial cathedral convolution reverb, Hans Zimmer pipe organ, ethereal
- * supersaw cosmic pad, lookahead tesseract clockwork scheduler, dynamic gesture
- * modulation coupler, equal-power 1.5s scene crossfading, and MediaStream destination.
+ * Plays "No Time for Caution" (Hans Zimmer / Interstellar OST) as real MP3 for
+ * the Gargantua scene. Wormhole & Tesseract use procedural Web Audio synths.
+ * Manages spatial cathedral convolution reverb, equal-power 1.5s crossfading,
+ * dynamic gesture modulation coupler, and MediaStream destination for recording.
  */
 
 import { GestureState, IAudioEngine } from '../core/types';
@@ -13,6 +13,9 @@ import { GargantuaOrganSynth } from './GargantuaOrganSynth';
 import { WormholePadSynth } from './WormholePadSynth';
 import { TesseractClockworkSynth } from './TesseractClockworkSynth';
 import { GestureAudioCoupler } from './GestureAudioCoupler';
+
+// Real Hans Zimmer track served from /public/audio/
+const NO_TIME_FOR_CAUTION_SRC = '/audio/no-time-for-caution.mp3';
 
 export class AudioEngine implements IAudioEngine {
   private context: AudioContext | BaseAudioContext | null = null;
@@ -25,11 +28,16 @@ export class AudioEngine implements IAudioEngine {
   private crossfadeTimer: any = null;
   private crossfadeAnimFrame: any = null;
 
-  // Synths
+  // Synths (procedural — Wormhole & Tesseract)
   private organSynth: GargantuaOrganSynth | null = null;
   private padSynth: WormholePadSynth | null = null;
   private clockSynth: TesseractClockworkSynth | null = null;
   private coupler: GestureAudioCoupler | null = null;
+
+  // Real MP3 track — "No Time for Caution" by Hans Zimmer
+  private realTrackEl: HTMLAudioElement | null = null;
+  private realTrackSource: MediaElementAudioSourceNode | null = null;
+  private realTrackGain: GainNode | null = null;
 
   // Scene Stem Gains
   private gargantuaStemGain: GainNode | null = null;
@@ -156,10 +164,7 @@ export class AudioEngine implements IAudioEngine {
     this.wormholeStemGain.connect(this.masterFilter);
     this.tesseractStemGain.connect(this.masterFilter);
 
-    // 5. Instantiate Procedural Synths
-    this.organSynth = new GargantuaOrganSynth(ctx);
-    this.organSynth.connect(this.gargantuaStemGain);
-
+    // 5. Instantiate Procedural Synths (Wormhole & Tesseract only)
     this.padSynth = new WormholePadSynth(ctx);
     this.padSynth.connect(this.wormholeStemGain);
 
@@ -168,11 +173,58 @@ export class AudioEngine implements IAudioEngine {
 
     this.coupler = new GestureAudioCoupler(ctx);
 
-    // 6. Start default scene synth
-    this.organSynth.start(ctx.currentTime + 0.05);
+    // 5b. Setup real MP3 track — "No Time for Caution" by Hans Zimmer
+    //     Route through Web Audio graph: audio el → MediaElementSource → gainNode → gargantuaStemGain → masterFilter
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+      try {
+        this.realTrackEl = new Audio();
+        this.realTrackEl.src = NO_TIME_FOR_CAUTION_SRC;
+        this.realTrackEl.loop = true;
+        this.realTrackEl.crossOrigin = 'anonymous';
+        this.realTrackEl.preload = 'auto';
+
+        const anyCtx = ctx as any;
+        if (typeof anyCtx.createMediaElementSource === 'function') {
+          this.realTrackSource = anyCtx.createMediaElementSource(this.realTrackEl);
+          this.realTrackGain = ctx.createGain();
+          this.realTrackGain.gain.setValueAtTime(1.0, ctx.currentTime);
+          if (this.realTrackSource) {
+            (this.realTrackSource as AudioNode).connect(this.realTrackGain);
+          }
+          this.realTrackGain.connect(this.gargantuaStemGain!);
+          console.log('[AudioEngine] Real track "No Time for Caution" connected to audio graph.');
+        }
+      } catch (e) {
+        console.warn('[AudioEngine] Failed to setup real MP3 track:', e);
+        this.realTrackEl = null;
+      }
+    }
+
+    // 6. Start default scene — Gargantua: play real track on first user interaction
+    const startRealTrack = async () => {
+      if (this.realTrackEl && this.realTrackEl.paused) {
+        if (this.context && this.context.state === 'suspended') {
+          await (this.context as AudioContext).resume().catch(() => {});
+        }
+        this.realTrackEl.play().catch((e) => {
+          console.warn('[AudioEngine] Real track autoplay blocked, will retry on interaction:', e);
+        });
+      }
+    };
+
+    // Try immediate play (may be blocked by browser)
+    startRealTrack();
+
+    // Also hook into interaction events as fallback
+    if (typeof window !== 'undefined') {
+      const playOnInteraction = () => { startRealTrack(); };
+      ['pointerdown', 'click', 'keydown', 'touchstart'].forEach(evt => {
+        window.addEventListener(evt, playOnInteraction, { once: true, passive: true });
+      });
+    }
 
     this.isInitialized = true;
-    console.log('[AudioEngine] Procedural Web Audio Engine initialized.');
+    console.log('[AudioEngine] Web Audio Engine with real Hans Zimmer track initialized.');
   }
 
   /**
@@ -263,9 +315,18 @@ export class AudioEngine implements IAudioEngine {
       this.crossfadeAnimFrame = null;
     }
 
-    // Start target synth if not yet running
+    // Start target synth if not yet running (procedural synths only)
     if (toSynth) {
       toSynth.start(this.context.currentTime);
+    }
+
+    // Handle real MP3 track: play when entering Gargantua, pause when leaving
+    if (targetKey === 'gargantua' && this.realTrackEl && this.realTrackEl.paused) {
+      this.realTrackEl.play().catch(() => {});
+    }
+    if (sourceKey === 'gargantua' && targetKey !== 'gargantua' && this.realTrackEl) {
+      // Pause the track after the crossfade (stem gain will handle the volume fade)
+      setTimeout(() => { this.realTrackEl?.pause(); }, transitionDuration * 1000 + 100);
     }
 
     const duration = Math.max(0.05, transitionDuration);
@@ -310,7 +371,7 @@ export class AudioEngine implements IAudioEngine {
           this.crossfadeTimer = setTimeout(stepCrossfade, 16);
         }
       } else {
-        // Crossfade complete: stop old synth to save CPU
+        // Crossfade complete: stop old procedural synth to save CPU
         if (fromGain) {
           try { fromGain.gain.setValueAtTime(0.0, this.context.currentTime); } catch {}
         }
@@ -338,7 +399,7 @@ export class AudioEngine implements IAudioEngine {
       gestureState,
       this.activeSceneName,
       {
-        gargantua: this.organSynth ?? undefined,
+        gargantua: undefined, // real track, not procedural — no synth modulation
         wormhole: this.padSynth ?? undefined,
         tesseract: this.clockSynth ?? undefined,
       },
@@ -414,7 +475,19 @@ export class AudioEngine implements IAudioEngine {
       this.crossfadeAnimFrame = null;
     }
 
-    this.organSynth?.dispose();
+    // Stop and clean up the real MP3 track
+    if (this.realTrackEl) {
+      try {
+        this.realTrackEl.pause();
+        this.realTrackEl.src = '';
+      } catch {}
+      this.realTrackEl = null;
+    }
+    try { this.realTrackSource?.disconnect(); } catch {}
+    try { this.realTrackGain?.disconnect(); } catch {}
+    this.realTrackSource = null;
+    this.realTrackGain = null;
+
     this.padSynth?.dispose();
     this.clockSynth?.dispose();
 
@@ -437,7 +510,6 @@ export class AudioEngine implements IAudioEngine {
       } catch {}
     }
 
-    this.organSynth = null;
     this.padSynth = null;
     this.clockSynth = null;
     this.coupler = null;
