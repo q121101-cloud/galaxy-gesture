@@ -35,6 +35,7 @@ uniform float uTime;
 uniform float uOpenness;
 uniform float uPixelRatio;
 uniform vec2 uHandPos;
+uniform float uIsRainbow;
 
 attribute vec3 aTargetFist;
 attribute vec3 aTargetOpen;
@@ -54,8 +55,28 @@ vec3 rotateAxis(vec3 v, vec3 axis, float angle) {
   return v * cos(angle) + cross(axis, v) * sin(angle) + axis * dot(axis, v) * (1.0 - cos(angle));
 }
 
+// Full 7-color RGB Rainbow Spectrum HSV to RGB
+vec3 hsv2rgb(vec3 c) {
+  vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+  vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+  return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
 void main() {
-  vColor = aColor;
+  if (uIsRainbow > 0.5) {
+    if (aType < 0.5) {
+      // 30% Core: Radiant pulsating rainbow singularity with white hot core
+      float hueCore = fract(uTime * 0.16 + length(aTargetFist) * 0.03 + aPhase * 0.08);
+      vec3 colCore = hsv2rgb(vec3(hueCore, 0.88, 1.0));
+      vColor = mix(vec3(1.0, 1.0, 1.0), colCore, clamp(length(aTargetFist) / 22.0, 0.0, 0.85));
+    } else {
+      // 70% Accretion Disc: Flowing 7-color rainbow waves rippling through space
+      float hueDisc = fract(uTime * 0.12 - (aOrbitRadius - 50.0) * 0.0035 + aOrbitAngle * 0.22 + aPhase * 0.06);
+      vColor = hsv2rgb(vec3(hueDisc, 0.95, 1.0));
+    }
+  } else {
+    vColor = aColor;
+  }
 
   // 1. Target Geometry A: Fist (Singularity Core + Accretion Disc)
   vec3 fistPos = aTargetFist;
@@ -282,7 +303,8 @@ export class ParticleSystem {
         uTime: { value: 0 },
         uOpenness: { value: 0.0 },
         uPixelRatio: { value: Math.min(window.devicePixelRatio, 1.25) },
-        uHandPos: { value: new THREE.Vector2(0, 0) }
+        uHandPos: { value: new THREE.Vector2(0, 0) },
+        uIsRainbow: { value: 0.0 }
       },
       transparent: true,
       depthWrite: false,
@@ -345,6 +367,18 @@ export class ParticleSystem {
 
   setTheme(theme) {
     this.currentTheme = theme;
+
+    if (theme === 'rainbow' || theme === 'rgb') {
+      if (this.material) {
+        this.material.uniforms.uIsRainbow.value = 1.0;
+      }
+      return;
+    }
+
+    if (this.material) {
+      this.material.uniforms.uIsRainbow.value = 0.0;
+    }
+
     const count = this.particleCount;
     const colorAttr = this.points.geometry.getAttribute('aColor');
     const colors = colorAttr.array;

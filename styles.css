@@ -621,6 +621,32 @@ html, body {
   box-shadow: var(--glow-emerald);
 }
 
+.hud-btn[data-theme="rainbow"] {
+  background: linear-gradient(135deg, rgba(255, 0, 85, 0.25), rgba(255, 170, 0, 0.25), rgba(0, 255, 170, 0.25), rgba(0, 170, 255, 0.25), rgba(187, 0, 255, 0.25));
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.hud-btn[data-theme="rainbow"]:hover {
+  border-color: #ffffff;
+  box-shadow: 0 0 16px rgba(255, 0, 200, 0.5), 0 0 20px rgba(0, 255, 255, 0.4);
+}
+
+.hud-btn[data-theme="rainbow"].active {
+  background: linear-gradient(90deg, #ff0055, #ff9900, #ffee00, #00ff66, #00ffff, #0066ff, #cc00ff, #ff0055);
+  background-size: 300% 100%;
+  animation: rgbRainbowFlow 3s linear infinite;
+  color: #ffffff;
+  font-weight: 700;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+  border-color: #ffffff;
+  box-shadow: 0 0 20px rgba(255, 0, 128, 0.7), 0 0 30px rgba(0, 220, 255, 0.6);
+}
+
+@keyframes rgbRainbowFlow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
 .shortcut-hints {
   font-size: 0.68rem;
   color: var(--text-muted);
