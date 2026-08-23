@@ -51,8 +51,8 @@ class GalaxyGestureApp {
     this.controls.enablePan = false;
 
     this.postprocessing = new PostProcessingPipeline(this.canvas, this.scene, this.camera);
-    // 100,000 particles!
-    this.particles = new ParticleSystem(this.scene, 100000);
+    // 500,000 particles!
+    this.particles = new ParticleSystem(this.scene, 500000);
   }
 
   initSystems() {

@@ -133,10 +133,10 @@ void main() {
   }
   
   gl_PointSize = aSize * sizeBoost * (360.0 / max(depth, 1.0)) * uPixelRatio;
-  gl_PointSize = clamp(gl_PointSize, 1.2, 40.0);
+  gl_PointSize = clamp(gl_PointSize, 1.0, 36.0);
 
   // Depth Fade
-  vAlpha = clamp(1.0 - (depth - 140.0) / 900.0, 0.45, 1.0);
+  vAlpha = clamp(1.0 - (depth - 140.0) / 900.0, 0.40, 1.0);
 }
 `;
 
@@ -155,20 +155,20 @@ void main() {
   
   float dist = sqrt(distSq);
   // Crisp neon core with clean gaussian glow (HD video recording)
-  float innerGlow = exp(-dist * 13.0) * 1.8;
+  float innerGlow = exp(-dist * 13.5) * 1.6;
   float outerGlow = smoothstep(0.5, 0.05, dist);
   
   vec3 finalColor = vColor * outerGlow + vec3(innerGlow);
-  float finalAlpha = outerGlow * vAlpha;
+  float finalAlpha = outerGlow * vAlpha * 0.95;
   
   gl_FragColor = vec4(finalColor, finalAlpha);
 }
 `;
 
 export class ParticleSystem {
-  constructor(scene, particleCount = 100000) {
+  constructor(scene, particleCount = 500000) {
     this.scene = scene;
-    this.particleCount = particleCount; // 100,000 particles!
+    this.particleCount = particleCount; // 500,000 particles!
     this.currentTheme = 'emerald';
     this.currentRotationX = 0;
     this.currentRotationY = 0;
@@ -194,7 +194,7 @@ export class ParticleSystem {
     const phases = new Float32Array(count);
     const warpVelocities = new Float32Array(count * 3);
 
-    // 30% Core (30,000), 70% Accretion Disc (70,000)
+    // 30% Core (150,000), 70% Accretion Disc (350,000)
     const coreCount = Math.floor(count * 0.30);
 
     const discEuler = new THREE.Euler(THREE.MathUtils.degToRad(32), 0, THREE.MathUtils.degToRad(15), 'XYZ');
@@ -226,7 +226,7 @@ export class ParticleSystem {
 
         orbitRadii[i] = r;
         orbitSpeeds[i] = 0;
-        sizes[i] = 2.0 + Math.random() * 2.4;
+        sizes[i] = 1.5 + Math.random() * 1.8;
 
       } else {
         // 70% Accretion Disc: Ultra-gentle, slow celestial glide
@@ -255,7 +255,7 @@ export class ParticleSystem {
         targetFist[i3 + 1] = localPos.y;
         targetFist[i3 + 2] = localPos.z;
 
-        sizes[i] = 1.4 + Math.random() * 2.0;
+        sizes[i] = 1.1 + Math.random() * 1.5;
       }
 
       // ==========================================
